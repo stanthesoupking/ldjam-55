@@ -7,6 +7,13 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		029B8A1F2BCBF2D100EED386 /* unity.c in Sources */ = {isa = PBXBuildFile; fileRef = 02B351F02BCA34D2006EAD22 /* unity.c */; };
+		029B8A212BCBF2D100EED386 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 02B351F82BCA3590006EAD22 /* Cocoa.framework */; };
+		029B8A222BCBF2D100EED386 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 02B351F62BCA358B006EAD22 /* IOKit.framework */; };
+		029B8A232BCBF2D100EED386 /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 02B351F42BCA3586006EAD22 /* CoreVideo.framework */; };
+		029B8A242BCBF2D100EED386 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 02B351F22BCA3581006EAD22 /* OpenGL.framework */; };
+		029B8A252BCBF2D100EED386 /* libraylib.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 02B351EE2BCA3450006EAD22 /* libraylib.a */; };
+		029B8A272BCBF2D100EED386 /* assets in CopyFiles */ = {isa = PBXBuildFile; fileRef = 02B351EB2BCA3443006EAD22 /* assets */; };
 		02B351EF2BCA3450006EAD22 /* libraylib.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 02B351EE2BCA3450006EAD22 /* libraylib.a */; };
 		02B351F12BCA34D2006EAD22 /* unity.c in Sources */ = {isa = PBXBuildFile; fileRef = 02B351F02BCA34D2006EAD22 /* unity.c */; };
 		02B351F32BCA3581006EAD22 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 02B351F22BCA3581006EAD22 /* OpenGL.framework */; };
@@ -17,6 +24,16 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
+		029B8A262BCBF2D100EED386 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 12;
+			dstPath = "";
+			dstSubfolderSpec = 16;
+			files = (
+				029B8A272BCBF2D100EED386 /* assets in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		02B351DE2BC9F4B9006EAD22 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 12;
@@ -30,7 +47,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		02B351E02BC9F4B9006EAD22 /* ldjam55 */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = ldjam55; sourceTree = BUILT_PRODUCTS_DIR; };
+		029B8A2B2BCBF2D100EED386 /* ldjam55 (x86) */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "ldjam55 (x86)"; sourceTree = BUILT_PRODUCTS_DIR; };
+		02B351E02BC9F4B9006EAD22 /* ldjam55 (arm) */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "ldjam55 (arm)"; sourceTree = BUILT_PRODUCTS_DIR; };
 		02B351EA2BCA3420006EAD22 /* src */ = {isa = PBXFileReference; lastKnownFileType = folder; path = src; sourceTree = "<group>"; };
 		02B351EB2BCA3443006EAD22 /* assets */ = {isa = PBXFileReference; lastKnownFileType = folder; path = assets; sourceTree = "<group>"; };
 		02B351EC2BCA3449006EAD22 /* vendor */ = {isa = PBXFileReference; lastKnownFileType = folder; path = vendor; sourceTree = "<group>"; };
@@ -43,6 +61,18 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		029B8A202BCBF2D100EED386 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				029B8A212BCBF2D100EED386 /* Cocoa.framework in Frameworks */,
+				029B8A222BCBF2D100EED386 /* IOKit.framework in Frameworks */,
+				029B8A232BCBF2D100EED386 /* CoreVideo.framework in Frameworks */,
+				029B8A242BCBF2D100EED386 /* OpenGL.framework in Frameworks */,
+				029B8A252BCBF2D100EED386 /* libraylib.a in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		02B351DD2BC9F4B9006EAD22 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -73,7 +103,8 @@
 		02B351E12BC9F4B9006EAD22 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				02B351E02BC9F4B9006EAD22 /* ldjam55 */,
+				02B351E02BC9F4B9006EAD22 /* ldjam55 (arm) */,
+				029B8A2B2BCBF2D100EED386 /* ldjam55 (x86) */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -93,9 +124,26 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		02B351DF2BC9F4B9006EAD22 /* ldjam55 */ = {
+		029B8A1D2BCBF2D100EED386 /* ldjam55 (x86) */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 02B351E72BC9F4B9006EAD22 /* Build configuration list for PBXNativeTarget "ldjam55" */;
+			buildConfigurationList = 029B8A282BCBF2D100EED386 /* Build configuration list for PBXNativeTarget "ldjam55 (x86)" */;
+			buildPhases = (
+				029B8A1E2BCBF2D100EED386 /* Sources */,
+				029B8A202BCBF2D100EED386 /* Frameworks */,
+				029B8A262BCBF2D100EED386 /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "ldjam55 (x86)";
+			productName = ldjam55;
+			productReference = 029B8A2B2BCBF2D100EED386 /* ldjam55 (x86) */;
+			productType = "com.apple.product-type.tool";
+		};
+		02B351DF2BC9F4B9006EAD22 /* ldjam55 (arm) */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 02B351E72BC9F4B9006EAD22 /* Build configuration list for PBXNativeTarget "ldjam55 (arm)" */;
 			buildPhases = (
 				02B351DC2BC9F4B9006EAD22 /* Sources */,
 				02B351DD2BC9F4B9006EAD22 /* Frameworks */,
@@ -105,9 +153,9 @@
 			);
 			dependencies = (
 			);
-			name = ldjam55;
+			name = "ldjam55 (arm)";
 			productName = ldjam55;
-			productReference = 02B351E02BC9F4B9006EAD22 /* ldjam55 */;
+			productReference = 02B351E02BC9F4B9006EAD22 /* ldjam55 (arm) */;
 			productType = "com.apple.product-type.tool";
 		};
 /* End PBXNativeTarget section */
@@ -137,12 +185,21 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				02B351DF2BC9F4B9006EAD22 /* ldjam55 */,
+				02B351DF2BC9F4B9006EAD22 /* ldjam55 (arm) */,
+				029B8A1D2BCBF2D100EED386 /* ldjam55 (x86) */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXSourcesBuildPhase section */
+		029B8A1E2BCBF2D100EED386 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				029B8A1F2BCBF2D100EED386 /* unity.c in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		02B351DC2BC9F4B9006EAD22 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -154,10 +211,48 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
+		029B8A292BCBF2D100EED386 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = x86_64;
+				CODE_SIGN_STYLE = Automatic;
+				HEADER_SEARCH_PATHS = (
+					"\"$(SRCROOT)/vendor/raylib/include\"",
+					"\"$(SRCROOT)/vendor/stb\"",
+				);
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/vendor/raylib/lib/mac_os",
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		029B8A2A2BCBF2D100EED386 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = x86_64;
+				CODE_SIGN_STYLE = Automatic;
+				HEADER_SEARCH_PATHS = (
+					"\"$(SRCROOT)/vendor/raylib/include\"",
+					"\"$(SRCROOT)/vendor/stb\"",
+				);
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/vendor/raylib/lib/mac_os",
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
 		02B351E52BC9F4B9006EAD22 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = (
+					x86_64,
+					arm64,
+				);
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
@@ -210,7 +305,7 @@
 				MACOSX_DEPLOYMENT_TARGET = 14.4;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
-				ONLY_ACTIVE_ARCH = YES;
+				ONLY_ACTIVE_ARCH = NO;
 				SDKROOT = macosx;
 			};
 			name = Debug;
@@ -219,6 +314,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = (
+					x86_64,
+					arm64,
+				);
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
@@ -272,6 +371,7 @@
 		02B351E82BC9F4B9006EAD22 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ARCHS = arm64;
 				CODE_SIGN_STYLE = Automatic;
 				HEADER_SEARCH_PATHS = (
 					"\"$(SRCROOT)/vendor/raylib/include\"",
@@ -288,6 +388,7 @@
 		02B351E92BC9F4B9006EAD22 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ARCHS = arm64;
 				CODE_SIGN_STYLE = Automatic;
 				HEADER_SEARCH_PATHS = (
 					"\"$(SRCROOT)/vendor/raylib/include\"",
@@ -304,6 +405,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		029B8A282BCBF2D100EED386 /* Build configuration list for PBXNativeTarget "ldjam55 (x86)" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				029B8A292BCBF2D100EED386 /* Debug */,
+				029B8A2A2BCBF2D100EED386 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		02B351DB2BC9F4B9006EAD22 /* Build configuration list for PBXProject "ldjam55" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -313,7 +423,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		02B351E72BC9F4B9006EAD22 /* Build configuration list for PBXNativeTarget "ldjam55" */ = {
+		02B351E72BC9F4B9006EAD22 /* Build configuration list for PBXNativeTarget "ldjam55 (arm)" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				02B351E82BC9F4B9006EAD22 /* Debug */,

@@ -390,7 +390,13 @@ void GameUpdateIntro(void) {
 
 void GameUpdateDayStart(void) {
 	if (IsKeyPressed(KEY_X) || IsGamepadButtonPressed(0, GAMEPAD_BUTTON_RIGHT_FACE_DOWN)) {
-		GameAdvanceDay();
+		if (game.day >= 2) {
+			game.day = -1;
+			game.gold = 0;
+			GameGoToIntro();
+		} else {
+			GameAdvanceDay();
+		}
 	}
 }
 

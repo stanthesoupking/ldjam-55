@@ -15,9 +15,9 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "02B351DF2BC9F4B9006EAD22"
-               BuildableName = "ldjam55"
-               BlueprintName = "ldjam55"
+               BlueprintIdentifier = "029B8A1D2BCBF2D100EED386"
+               BuildableName = "ldjam55 (x86)"
+               BlueprintName = "ldjam55 (x86)"
                ReferencedContainer = "container:ldjam55.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -31,7 +31,7 @@
       shouldAutocreateTestPlan = "YES">
    </TestAction>
    <LaunchAction
-      buildConfiguration = "Release"
+      buildConfiguration = "Debug"
       selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
       launchStyle = "0"
@@ -45,9 +45,9 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "02B351DF2BC9F4B9006EAD22"
-            BuildableName = "ldjam55"
-            BlueprintName = "ldjam55"
+            BlueprintIdentifier = "029B8A1D2BCBF2D100EED386"
+            BuildableName = "ldjam55 (x86)"
+            BlueprintName = "ldjam55 (x86)"
             ReferencedContainer = "container:ldjam55.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
@@ -62,9 +62,9 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "02B351DF2BC9F4B9006EAD22"
-            BuildableName = "ldjam55"
-            BlueprintName = "ldjam55"
+            BlueprintIdentifier = "029B8A1D2BCBF2D100EED386"
+            BuildableName = "ldjam55 (x86)"
+            BlueprintName = "ldjam55 (x86)"
             ReferencedContainer = "container:ldjam55.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
