@@ -7,7 +7,7 @@ typedef struct Assets {
 static Assets assets;
 
 void AssetsInit(void) {
-	assets = (Assets) {};
+	assets = (Assets) { 0 };
 	
 	const char* appPath = GetApplicationDirectory();
 	char bufPath[256];

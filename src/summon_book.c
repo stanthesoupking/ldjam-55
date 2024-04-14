@@ -13,10 +13,10 @@ typedef struct SummonBookEntry {
 
 #define SUMMON_BOOK_ENTRY_COUNT 1
 static SummonBookEntry SUMMON_BOOK_ENTRIES[SUMMON_BOOK_ENTRY_COUNT] = {
-	(SummonBookEntry) {
+	{
 		.graphicTexture = ASSET_TEXTURE_CHICKEN_GRAPHIC,
-		.graphicOffset = (Vector2) { 8, 10 },
-		.hoverRect = (Rectangle) { 2, 4, 78, 28 },
+		.graphicOffset = { 8, 10 },
+		.hoverRect = { 2, 4, 78, 28 },
 		.summonFunc = GameSummonChicken,
 		.price = 0,
 	}
@@ -40,7 +40,7 @@ void SummonBookInit(SummonBook* book) {
 
 Rectangle SummonBookGetEntryScreenHoverRect(SummonBook* book, u32 entryIndex) {
 	const Texture2D summonBookTexture = AssetsGetTexture(ASSET_TEXTURE_SUMMON_BOOK);
-	const Vector2 summonBookOffset = (Vector2) { -(summonBookTexture.width >> 1), -(summonBookTexture.height >> 1) };
+	const Vector2 summonBookOffset = (Vector2) { (f32) -(summonBookTexture.width >> 1), (f32) -(summonBookTexture.height >> 1)};
 	const Rectangle bookHover = SUMMON_BOOK_ENTRIES[entryIndex].hoverRect;
 	return (Rectangle) {
 		.x = bookHover.x + summonBookOffset.x + book->bookPosition.x,
@@ -73,7 +73,7 @@ void SummonBookDraw(SummonBook* book) {
 	const Color inkColor = { 106, 90, 85, 255 };
 	
 	Texture2D summonBookTexture = AssetsGetTexture(ASSET_TEXTURE_SUMMON_BOOK);
-	const Vector2 summonBookOffset = (Vector2) { -(summonBookTexture.width >> 1), -(summonBookTexture.height >> 1) };
+	const Vector2 summonBookOffset = (Vector2) { (f32)-(summonBookTexture.width >> 1), (f32)-(summonBookTexture.height >> 1) };
 	DrawTextureV(summonBookTexture, Vector2Add(book->bookPosition, summonBookOffset), WHITE);
 	
 	for (u32 entryIndex = 0; entryIndex < SUMMON_BOOK_ENTRY_COUNT; entryIndex++) {

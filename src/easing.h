@@ -4,33 +4,33 @@ static inline f32 EaseInOutQuart(f32 x) {
 }
 
 static inline f32 EaseInOutElastic(f32 x) {
-	const f32 c5 = (2 * PI) / 4.5;
+	const f32 c5 = (2.0f * PI) / 4.5f;
 
 	return x == 0.0f
-	  ? 0
+	  ? 0.0f
 	  : x == 1.0f
-	  ? 1
-	  : x < 0.5
-	  ? -(powf(2, 20 * x - 10) * sinf((20 * x - 11.125) * c5)) / 2
-	  : (powf(2, -20 * x + 10) * sinf((20 * x - 11.125) * c5)) / 2 + 1;
+	  ? 1.0f
+	  : x < 0.5f
+	  ? -(powf(2.0f, 20.0f * x - 10.0f) * sinf((20.0f * x - 11.125f) * c5)) / 2.0f
+	  : (powf(2.0f, -20.0f * x + 10.0f) * sinf((20.0f * x - 11.125f) * c5)) / 2.0f + 1.0f;
 }
 
 static inline f32 EaseInElastic(f32 x) {
-	const f32 c4 = (2 * PI) / 3;
+	const f32 c4 = (2.0f * PI) / 3.0f;
 
 	return x == 0.0f
-	  ? 0
+	  ? 0.0f
 	  : x == 1.0f
-	  ? 1
-	  : -powf(2, 10 * x - 10) * sinf((x * 10 - 10.75) * c4);
+	  ? 1.0f
+	  : -powf(2.0f, 10.0f * x - 10.0f) * sinf((x * 10.0f - 10.75f) * c4);
 }
 
 static inline f32 EaseOutElastic(f32 x) {
-	const f32 c4 = (2 * PI) / 3;
+	const f32 c4 = (2.0f * PI) / 3.0f;
 
 	return x == 0.0f
-	  ? 0
+	  ? 0.0f
 	  : x == 1.0f
-	  ? 1
-	  : powf(2, -10 * x) * sinf((x * 10 - 0.75) * c4) + 1;
+	  ? 1.0f
+	  : powf(2.0f, -10.0f * x) * sinf((x * 10.0f - 0.75f) * c4) + 1.0f;
 }

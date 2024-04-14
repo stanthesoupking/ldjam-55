@@ -20,12 +20,12 @@ static f32 SEAT_END_X[SEAT_COUNT] = {
 
 #define HAND_TRAIL_LENGTH 6
 const Color HAND_TRAIL_COLORS[HAND_TRAIL_LENGTH] = {
-	BLANK,
-	(Color) { 255, 82, 119, 255 },
-	BLANK,
-	(Color) { 200, 212, 93, 255 },
-	BLANK,
-	(Color) { 146, 232, 192, 255 },
+	{ 0, 0, 0, 0 },
+	{ 255, 82, 119, 255 },
+	{ 0, 0, 0, 0 },
+	{ 200, 212, 93, 255 },
+	{ 0, 0, 0, 0 },
+	{ 146, 232, 192, 255 },
 };
 
 #define TABLETOP_Y 70
@@ -42,11 +42,11 @@ typedef struct FoodEntry {
 } FoodEntry;
 
 const FoodEntry FOOD_ENTRIES[FOOD_ENTRY_ID_COUNT] = {
-	[FOOD_ENTRY_ID_ROAST_CHICKEN] = (FoodEntry) {
+	[FOOD_ENTRY_ID_ROAST_CHICKEN] = {
 		.entryID = FOOD_ENTRY_ID_ROAST_CHICKEN,
 		.texture = ASSET_TEXTURE_RCHICKEN0
 	},
-	[FOOD_ENTRY_ID_BURNT_ROAST_CHICKEN] = (FoodEntry) {
+	[FOOD_ENTRY_ID_BURNT_ROAST_CHICKEN] = {
 		.entryID = FOOD_ENTRY_ID_BURNT_ROAST_CHICKEN,
 		.texture = ASSET_TEXTURE_BRCHICKEN0
 	},
@@ -79,8 +79,8 @@ typedef struct Customer {
 	CustomerState state;
 	Texture2D texture;
 	
-	f32 stateStartTime;
-	f32 stateEndTime;
+	f64 stateStartTime;
+	f64 stateEndTime;
 	
 	Vector2 currentPosition;
 	
@@ -115,6 +115,7 @@ f32 CustomerGetTimeForState(CustomerState state) {
 			return 0.0f;
 		} break;
 	}
+	return 0.0f;
 }
 
 Vector2 CustomerGetPositionForState(Customer* customer, CustomerState state) {
@@ -146,13 +147,14 @@ Vector2 CustomerGetPositionForState(Customer* customer, CustomerState state) {
 			return (Vector2) { -20.0f, floorY };
 		} break;
 	}
+	return Vector2Zero();
 }
 
 #define SUMMON_MAX_TEXTURE_COUNT 16
 typedef struct Summon {
 	AssetTexture textures[SUMMON_MAX_TEXTURE_COUNT];
 	u32 textureCount;
-	f32 animationStartTime;
+	f64 animationStartTime;
 	f32 animationSpeed;
 	Vector2 position;
 	f32 speed;
@@ -195,7 +197,7 @@ typedef struct Game {
 	Vector2 handPositionHistory[HAND_TRAIL_LENGTH];
 	u32 handPositionHistoryHead;
 	
-	f32 handShakeTime;
+	f64 handShakeTime;
 	Vector2 handShakeVector;
 	
 	SummonBook summonBook;
@@ -235,7 +237,7 @@ void GameTrySpawnCustomer(void) {
 }
 
 void GameInit(void) {
-	game = (Game) {};
+	game = (Game) { 0 };
 	game.targetTex = LoadRenderTexture(SCREEN_WIDTH, SCREEN_HEIGHT);
 	for (u8 seatIndex = 0; seatIndex < SEAT_COUNT; seatIndex++) {
 		arrpush(game.freeSeats, seatIndex);
@@ -260,11 +262,11 @@ void GameDeinit(void) {
 // MARK: Game Update
 
 void GameUpdate(void) {
-	const f32 time = GetTime();
+	const f64 time = GetTime();
 	const f32 dt = GetFrameTime();
 	
 	// update hand
-	Vector2 handVector = {};
+	Vector2 handVector = { 0 };
 	if (IsKeyDown(KEY_A)) {
 		handVector.x -= 1.0f;
 	}
@@ -298,7 +300,7 @@ void GameUpdate(void) {
 		game.shootingFire = true;
 		const f32 shakeFrequency = 0.02f;
 		if ((time - game.handShakeTime) > shakeFrequency) {
-			game.handShakeVector = (Vector2) { GetRandomValue(-1, 1), GetRandomValue(-1, 1) };
+			game.handShakeVector = (Vector2) { (f32)GetRandomValue(-1, 1), (f32)GetRandomValue(-1, 1) };
 			game.handShakeTime = time;
 		}
 	} else {
@@ -310,7 +312,7 @@ void GameUpdate(void) {
 		Vector2 handAcceleration = Vector2Scale(Vector2Normalize(handVector), dt * 1700.0f);
 		game.handVelocity = Vector2Add(game.handVelocity, handAcceleration);
 	}
-	game.handPosition = Vector2Add(Vector2Add(game.handPosition, Vector2Scale(game.handVelocity, dt)), (Vector2) { 0, sinf(GetTime() * 4.0f) * 0.25f });
+	game.handPosition = Vector2Add(Vector2Add(game.handPosition, Vector2Scale(game.handVelocity, dt)), (Vector2) { 0, (f32)sin(GetTime() * 4.0) * 0.25f });
 	game.synthesizedHandPosition = Vector2Add(game.handPosition, game.handShakeVector);
 	game.handVelocity = Vector2Scale(game.handVelocity, powf(0.001f, dt));
 	game.handPositionHistoryHead = (game.handPositionHistoryHead + 1) % HAND_TRAIL_LENGTH;
@@ -367,7 +369,7 @@ void GameUpdate(void) {
 		
 		Vector2 positionA = CustomerGetPositionForState(customer, customer->state - 1);
 		Vector2 positionB = CustomerGetPositionForState(customer, customer->state);
-		f32 animationAmount = (time - customer->stateStartTime) / (customer->stateEndTime - customer->stateStartTime);
+		f32 animationAmount = (f32)((time - customer->stateStartTime) / (customer->stateEndTime - customer->stateStartTime));
 		customer->currentPosition = Vector2Lerp(positionA, positionB, EaseInOutQuart(animationAmount));
 	}
 	
@@ -396,7 +398,7 @@ void GameUpdate(void) {
 		}
 		
 		if (summon->cooking) {
-			summon->
+			
 		}
 	}
 	
@@ -410,8 +412,8 @@ void GameUpdate(void) {
 		}
 		game.summonBookAmount = Clamp(game.summonBookAmount, 0.0f, 1.0f);
 		
-		Vector2 bookStartPosition = { SCREEN_WIDTH/2, SCREEN_HEIGHT + (AssetsGetTexture(ASSET_TEXTURE_SUMMON_BOOK).height / 2) };
-		Vector2 bookEndPosition = { SCREEN_WIDTH/2, (SCREEN_HEIGHT/2) - 8 };
+		Vector2 bookStartPosition = { (f32)(SCREEN_WIDTH/2), (f32)(SCREEN_HEIGHT + (AssetsGetTexture(ASSET_TEXTURE_SUMMON_BOOK).height / 2)) };
+		Vector2 bookEndPosition = { (f32)(SCREEN_WIDTH/2), (f32)((SCREEN_HEIGHT/2) - 8) };
 		Vector2 bookPosition = Vector2Lerp(bookStartPosition, bookEndPosition, EaseInOutQuart(game.summonBookAmount));
 		
 		SummonBookUpdate(&game.summonBook, game.summonBookToggle, bookPosition, game.handPosition);
@@ -421,8 +423,8 @@ void GameUpdate(void) {
 }
 
 Vector2 GameGetMousePosition(void) {
-	f32 renderWidth = GetScreenWidth();
-	f32 renderHeight = GetScreenHeight();
+	f32 renderWidth = (f32)GetScreenWidth();
+	f32 renderHeight = (f32)GetScreenHeight();
 	f32 scaleRatioW = (f32)renderWidth / (f32)SCREEN_WIDTH;
 	f32 scaleRatioH = (f32)renderHeight / (f32)SCREEN_HEIGHT;
 	f32 scaleRatio = ld_min(scaleRatioW, scaleRatioH);
@@ -434,7 +436,7 @@ Vector2 GameGetMousePosition(void) {
 // MARK: Game Render
 
 void GameRender(void) {
-	const f32 time = GetTime();
+	const f64 time = GetTime();
 
 	BeginTextureMode(game.targetTex);
 	{
@@ -444,15 +446,15 @@ void GameRender(void) {
 		for (u32 customerIdx = 0; customerIdx < arrlen(game.customers); customerIdx++) {
 			Customer* customer = &game.customers[customerIdx];
 			
-			Vector2 characterOffset = { floorf(-customer->texture.width * 0.5f), -(customer->texture.height - 1) };
+			Vector2 characterOffset = { floorf((f32)-customer->texture.width * 0.5f), (f32)-(customer->texture.height - 1) };
 			DrawTextureV(customer->texture, Vector2Add(customer->currentPosition, characterOffset), WHITE);
 			
 			if (customer->state == CUSTOMER_STATE_LOOKING_AT_MENU) {
-				Vector2 thinkingOffset = { -10, -(customer->texture.height + 14) };
+				Vector2 thinkingOffset = { -10.0f, (f32)-(customer->texture.height + 14) };
 				DrawTextureV(AssetsGetTexture(ASSET_TEXTURE_THINKING), Vector2Add(customer->currentPosition, thinkingOffset), WHITE);
 			}
 			if (customer->state == CUSTOMER_STATE_WAITING_FOR_MEAL) {
-				Vector2 speechOffset = { 3, -(customer->texture.height + 9) };
+				Vector2 speechOffset = { 3.0f, (f32)-(customer->texture.height + 9) };
 				DrawTextureCenteredV(AssetsGetTexture(ASSET_TEXTURE_SPEECH), Vector2Add(customer->currentPosition, speechOffset), WHITE);
 				
 				FoodEntry food_entry = FOOD_ENTRIES[customer->desiredFoodID];
@@ -460,13 +462,13 @@ void GameRender(void) {
 			}
 		}
 	
-		DrawTexture(AssetsGetTexture(ASSET_TEXTURE_SHRINE0 + fabsf(roundf(sinf(GetTime() * 5.0f) * 2.0f))), 190, 54, WHITE);
+		DrawTexture(AssetsGetTexture(ASSET_TEXTURE_SHRINE0 + fabsf(roundf((f32)sin(GetTime() * 5.0) * 2.0f))), 190, 54, WHITE);
 		DrawTexture(AssetsGetTexture(ASSET_TEXTURE_COUNTER), 0, 69, WHITE);
 		
 		// draw summon book prompt
 		if (game.hoveringSummonBook) {
-			DrawTextEx(AssetsGetFont(), "summon", (Vector2) { 193, 77 }, AssetsGetFont().baseSize, 0.0f, BLACK);
-			DrawTextEx(AssetsGetFont(), "summon", (Vector2) { 193, 76 }, AssetsGetFont().baseSize, 0.0f, WHITE);
+			DrawTextEx(AssetsGetFont(), "summon", (Vector2) { 193, 77 }, (f32)AssetsGetFont().baseSize, 0.0f, BLACK);
+			DrawTextEx(AssetsGetFont(), "summon", (Vector2) { 193, 76 }, (f32)AssetsGetFont().baseSize, 0.0f, WHITE);
 			DrawTexture(AssetsGetTexture(ASSET_TEXTURE_BUTTON_X), 202, 46, WHITE);
 		}
 		
@@ -475,7 +477,7 @@ void GameRender(void) {
 			Summon* summon = &game.summons[summonIdx];
 			u32 frame = (u32)((time - summon->animationStartTime) * summon->animationSpeed) % summon->textureCount;
 			Texture2D summonTexture = AssetsGetTexture(summon->textures[frame]);
-			DrawTextureV(summonTexture, Vector2Add(summon->position, (Vector2) { -summonTexture.width/2, -summonTexture.height }), WHITE);
+			DrawTextureV(summonTexture, Vector2Add(summon->position, (Vector2) { (f32)-summonTexture.width/2, (f32)-summonTexture.height }), WHITE);
 		}
 		
 		// draw foods
@@ -483,13 +485,13 @@ void GameRender(void) {
 			Food* food = &game.foods[foodIdx];
 			const FoodEntry* foodEntry = &FOOD_ENTRIES[food->entryID];
 			Texture2D foodTexture = AssetsGetTexture(foodEntry->texture);
-			DrawTextureV(foodTexture, Vector2Add(food->position, (Vector2) { -foodTexture.width/2, -foodTexture.height }), WHITE);
+			DrawTextureV(foodTexture, Vector2Add(food->position, (Vector2) { (f32)-foodTexture.width/2, (f32)-foodTexture.height }), WHITE);
 		}
 		
 		// draw flame
 		if (game.shootingFire) {
-			DrawRectangle(game.synthesizedHandPosition.x - 3.0f, floorf(game.synthesizedHandPosition.y), 6, floorf(TABLETOP_Y - game.synthesizedHandPosition.y), (Color) { 255, 137, 51, 255 });
-			DrawRectangle(game.synthesizedHandPosition.x - 2.0f, floorf(game.synthesizedHandPosition.y), 4, floorf(TABLETOP_Y - game.synthesizedHandPosition.y), (Color) { 255, 238, 131, 255 });
+			DrawRectangle((i32)(game.synthesizedHandPosition.x - 3.0f), (i32)floorf(game.synthesizedHandPosition.y), 6, (i32)floorf(TABLETOP_Y - game.synthesizedHandPosition.y), (Color) { 255, 137, 51, 255 });
+			DrawRectangle((i32)(game.synthesizedHandPosition.x - 2.0f), (i32)floorf(game.synthesizedHandPosition.y), 4, (i32)floorf(TABLETOP_Y - game.synthesizedHandPosition.y), (Color) { 255, 238, 131, 255 });
 		}
 		
 		// draw summon book
@@ -517,7 +519,7 @@ void GameRender(void) {
 				const Vector2 trailPosition = game.handPositionHistory[(game.handPositionHistoryHead + handTrailIndex) % HAND_TRAIL_LENGTH];
 				const f32 trailAlpha = ld_min(Vector2Distance(game.handPosition, trailPosition) / 4.0f, 1.0f);
 				Color trailColor = HAND_TRAIL_COLORS[handTrailIndex];
-				trailColor.a *= trailAlpha;
+				trailColor.a = (u8)((f32)trailColor.a * trailAlpha);
 				DrawTextureCenteredV(AssetsGetTexture(currentHandTrailTexture), game.handPositionHistory[(game.handPositionHistoryHead + handTrailIndex) % HAND_TRAIL_LENGTH], trailColor);
 			}
 			DrawTextureCenteredV(AssetsGetTexture(currentHandTexture), game.synthesizedHandPosition, WHITE);
@@ -528,8 +530,8 @@ void GameRender(void) {
 	BeginDrawing();
 	ClearBackground(BLACK);
 	{
-		f32 renderWidth = GetScreenWidth();
-		f32 renderHeight = GetScreenHeight();
+		f32 renderWidth = (f32)GetScreenWidth();
+		f32 renderHeight = (f32)GetScreenHeight();
 		f32 scaleRatioW = (f32)renderWidth / (f32)SCREEN_WIDTH;
 		f32 scaleRatioH = (f32)renderHeight / (f32)SCREEN_HEIGHT;
 		f32 scaleRatio = ld_min(scaleRatioW, scaleRatioH);
