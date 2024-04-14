@@ -2,8 +2,8 @@
 typedef struct Assets {
 	Texture2D textures[ASSET_TEXTURE_COUNT];
 	Sound sounds[ASSET_SOUND_COUNT];
+	Music musics[ASSET_MUSIC_COUNT];
 	Font font;
-	Music music;
 } Assets;
 
 static Assets assets;
@@ -23,17 +23,32 @@ void AssetsInit(void) {
 	sprintf(bufPath, "%sassets/dwarf0.png", appPath);
 	assets.textures[ASSET_TEXTURE_DWARF0] = LoadTexture(bufPath);
 	
+	sprintf(bufPath, "%sassets/dwarf1.png", appPath);
+	assets.textures[ASSET_TEXTURE_DWARF1] = LoadTexture(bufPath);
+	
 	sprintf(bufPath, "%sassets/ogre0.png", appPath);
 	assets.textures[ASSET_TEXTURE_OGRE0] = LoadTexture(bufPath);
 	
+	sprintf(bufPath, "%sassets/ogre1.png", appPath);
+	assets.textures[ASSET_TEXTURE_OGRE1] = LoadTexture(bufPath);
+	
 	sprintf(bufPath, "%sassets/lady0.png", appPath);
 	assets.textures[ASSET_TEXTURE_LADY0] = LoadTexture(bufPath);
+	
+	sprintf(bufPath, "%sassets/lady1.png", appPath);
+	assets.textures[ASSET_TEXTURE_LADY1] = LoadTexture(bufPath);
+	
+	sprintf(bufPath, "%sassets/creepyman0.png", appPath);
+	assets.textures[ASSET_TEXTURE_CREEPYMAN0] = LoadTexture(bufPath);
 	
 	sprintf(bufPath, "%sassets/thinking.png", appPath);
 	assets.textures[ASSET_TEXTURE_THINKING] = LoadTexture(bufPath);
 	
 	sprintf(bufPath, "%sassets/speech.png", appPath);
 	assets.textures[ASSET_TEXTURE_SPEECH] = LoadTexture(bufPath);
+	
+	sprintf(bufPath, "%sassets/speechIntro0.png", appPath);
+	assets.textures[ASSET_TEXTURE_SPEECH_INTRO0] = LoadTexture(bufPath);
 	
 	sprintf(bufPath, "%sassets/hand0.png", appPath);
 	assets.textures[ASSET_TEXTURE_HAND0] = LoadTexture(bufPath);
@@ -62,6 +77,9 @@ void AssetsInit(void) {
 	sprintf(bufPath, "%sassets/chickenGraphic.png", appPath);
 	assets.textures[ASSET_TEXTURE_CHICKEN_GRAPHIC] = LoadTexture(bufPath);
 	
+	sprintf(bufPath, "%sassets/sheepGraphic.png", appPath);
+	assets.textures[ASSET_TEXTURE_SHEEP_GRAPHIC] = LoadTexture(bufPath);
+	
 	sprintf(bufPath, "%sassets/chicken0.png", appPath);
 	assets.textures[ASSET_TEXTURE_CHICKEN0] = LoadTexture(bufPath);
 	
@@ -77,6 +95,15 @@ void AssetsInit(void) {
 	sprintf(bufPath, "%sassets/brchicken0.png", appPath);
 	assets.textures[ASSET_TEXTURE_BRCHICKEN0] = LoadTexture(bufPath);
 	
+	sprintf(bufPath, "%sassets/sheep0.png", appPath);
+	assets.textures[ASSET_TEXTURE_SHEEP0] = LoadTexture(bufPath);
+	
+	sprintf(bufPath, "%sassets/rlamb.png", appPath);
+	assets.textures[ASSET_TEXTURE_RLAMB] = LoadTexture(bufPath);
+	
+	sprintf(bufPath, "%sassets/brlamb.png", appPath);
+	assets.textures[ASSET_TEXTURE_BRLAMB] = LoadTexture(bufPath);
+	
 	sprintf(bufPath, "%sassets/meterBottom.png", appPath);
 	assets.textures[ASSET_TEXTURE_METER_BOTTOM] = LoadTexture(bufPath);
 	
@@ -91,6 +118,9 @@ void AssetsInit(void) {
 	
 	sprintf(bufPath, "%sassets/goldIcon.png", appPath);
 	assets.textures[ASSET_TEXTURE_GOLD_ICON] = LoadTexture(bufPath);
+	
+	sprintf(bufPath, "%sassets/creepIntro.png", appPath);
+	assets.textures[ASSET_TEXTURE_CREEP_INTRO] = LoadTexture(bufPath);
 	
 	sprintf(bufPath, "%sassets/chickenSummon.mp3", appPath);
 	assets.sounds[ASSET_SOUND_CHICKEN_SUMMON] = LoadSound(bufPath);
@@ -118,12 +148,24 @@ void AssetsInit(void) {
 	sprintf(bufPath, "%sassets/coin2.mp3", appPath);
 	assets.sounds[ASSET_SOUND_COIN2] = LoadSound(bufPath);
 	
+	sprintf(bufPath, "%sassets/sheepSummon.mp3", appPath);
+	assets.sounds[ASSET_SOUND_SHEEP_SUMMON] = LoadSound(bufPath);
+	SetSoundVolume(assets.sounds[ASSET_SOUND_SHEEP_SUMMON], 0.21f);
+	
+	sprintf(bufPath, "%sassets/sheepDead.mp3", appPath);
+	assets.sounds[ASSET_SOUND_SHEEP_DEAD] = LoadSound(bufPath);
+	SetSoundVolume(assets.sounds[ASSET_SOUND_SHEEP_DEAD], 0.21f);
+	
 	sprintf(bufPath, "%sassets/creep.bdf", appPath);
 	assets.font = LoadFont(bufPath);
 	
 	sprintf(bufPath, "%sassets/music.mp3", appPath);
-	assets.music = LoadMusicStream(bufPath);
-	SetMusicVolume(assets.music, 0.45f);
+	assets.musics[ASSET_MUSIC_PLAYING] = LoadMusicStream(bufPath);
+	SetMusicVolume(assets.musics[ASSET_MUSIC_PLAYING], 0.45f);
+	
+	sprintf(bufPath, "%sassets/creepyMusic.mp3", appPath);
+	assets.musics[ASSET_MUSIC_CREEPY_INTRO] = LoadMusicStream(bufPath);
+	SetMusicVolume(assets.musics[ASSET_MUSIC_CREEPY_INTRO], 0.45f);
 	
 	free(bufPath);
 }
@@ -143,6 +185,6 @@ Font AssetsGetFont(void) {
 	return assets.font;
 }
 
-Music AssetsGetMusic(void) {
-	return assets.music;
+Music AssetsGetMusic(AssetMusic music) {
+	return assets.musics[music];
 }

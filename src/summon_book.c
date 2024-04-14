@@ -11,7 +11,7 @@ typedef struct SummonBookEntry {
 	i32 price;
 } SummonBookEntry;
 
-#define SUMMON_BOOK_ENTRY_COUNT 1
+#define SUMMON_BOOK_ENTRY_COUNT 2
 static SummonBookEntry SUMMON_BOOK_ENTRIES[SUMMON_BOOK_ENTRY_COUNT] = {
 	{
 		.graphicTexture = ASSET_TEXTURE_CHICKEN_GRAPHIC,
@@ -19,7 +19,14 @@ static SummonBookEntry SUMMON_BOOK_ENTRIES[SUMMON_BOOK_ENTRY_COUNT] = {
 		.hoverRect = { 2, 4, 78, 28 },
 		.summonFunc = GameSummonChicken,
 		.price = 0,
-	}
+	},
+	{
+		.graphicTexture = ASSET_TEXTURE_SHEEP_GRAPHIC,
+		.graphicOffset = { 8, 35 },
+		.hoverRect = { 2, 29, 78, 28 },
+		.summonFunc = GameSummonSheep,
+		.price = 0,
+	},
 };
 
 
@@ -58,7 +65,7 @@ void SummonBookUpdate(SummonBook* book, bool active, Vector2 bookPosition, Vecto
 	for (u32 entryIndex = 0; entryIndex < SUMMON_BOOK_ENTRY_COUNT; entryIndex++) {
 		SummonBookEntry entry = SUMMON_BOOK_ENTRIES[entryIndex];
 		Rectangle hoverRect = SummonBookGetEntryScreenHoverRect(book, entryIndex);
-		if ((handPosition.x > hoverRect.x) && (handPosition.y > hoverRect.y) && (handPosition.x < hoverRect.x + hoverRect.width) && (handPosition.y < hoverRect.y + hoverRect.height)) {
+		if ((handPosition.x > hoverRect.x) && (handPosition.y > hoverRect.y) && (handPosition.x < hoverRect.x + hoverRect.width) && (handPosition.y < hoverRect.y + hoverRect.height) && book->entryAvailable[entryIndex]) {
 			book->entryHover[entryIndex] = true;
 			
 			if (IsKeyPressed(KEY_X) || IsGamepadButtonPressed(0, GAMEPAD_BUTTON_RIGHT_FACE_DOWN)) {

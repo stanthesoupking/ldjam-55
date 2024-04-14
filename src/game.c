@@ -6,6 +6,10 @@ static f32 SEAT_POSITIONS[SEAT_COUNT] = {
 	165.0f,
 };
 
+#define DAY_COUNT 3
+#define DAY_DURATION_SECONDS 120.0
+#define SCROLL_BOOK_COST 666
+
 static f32 SEAT_START_X[SEAT_COUNT] = {
 	47.0f,
 	95.0f,
@@ -33,6 +37,8 @@ const Color HAND_TRAIL_COLORS[HAND_TRAIL_LENGTH] = {
 typedef enum FoodEntryID {
 	FOOD_ENTRY_ID_ROAST_CHICKEN,
 	FOOD_ENTRY_ID_BURNT_ROAST_CHICKEN,
+	FOOD_ENTRY_ID_ROAST_LAMB,
+	FOOD_ENTRY_ID_BURNT_ROAST_LAMB,
 	FOOD_ENTRY_ID_COUNT,
 } FoodEntryID;
 
@@ -50,6 +56,14 @@ const FoodEntry FOOD_ENTRIES[FOOD_ENTRY_ID_COUNT] = {
 		.entryID = FOOD_ENTRY_ID_BURNT_ROAST_CHICKEN,
 		.texture = ASSET_TEXTURE_BRCHICKEN0
 	},
+	[FOOD_ENTRY_ID_ROAST_LAMB] = {
+		.entryID = FOOD_ENTRY_ID_ROAST_LAMB,
+		.texture = ASSET_TEXTURE_RLAMB
+	},
+	[FOOD_ENTRY_ID_BURNT_ROAST_LAMB] = {
+		.entryID = FOOD_ENTRY_ID_BURNT_ROAST_LAMB,
+		.texture = ASSET_TEXTURE_BRLAMB
+	},
 };
 
 typedef struct Food {
@@ -59,8 +73,11 @@ typedef struct Food {
 
 static AssetTexture CUSTOMER_TEXTURES[] = {
 	ASSET_TEXTURE_DWARF0,
+	ASSET_TEXTURE_DWARF1,
 	ASSET_TEXTURE_OGRE0,
+	ASSET_TEXTURE_OGRE1,
 	ASSET_TEXTURE_LADY0,
+	ASSET_TEXTURE_LADY1,
 };
 
 typedef enum CustomerState {
@@ -164,6 +181,7 @@ typedef struct Summon {
 	f32 cookBurntDuration;
 	FoodEntryID onCookDoneProducesFoodID;
 	FoodEntryID onCookBurntProducesFoodID;
+	AssetSound deathSound;
 	bool dead;
 } Summon;
 
@@ -178,8 +196,19 @@ typedef struct SummonBookAnimationState {
 	f32 animationEndTime;
 } SummonBookAnimationState;
 
+typedef enum GameState {
+	GAME_STATE_INTRO,
+	GAME_STATE_DAY_START,
+	GAME_STATE_PLAYING,
+} GameState;
+
 typedef struct Game {
 	RenderTexture2D targetTex;
+	
+	GameState state;
+	
+	f64 dayTransitionStartTime;
+	f64 dayTransitionEndTime;
 	
 	// customers/seats
 	Customer* customers;
@@ -215,6 +244,13 @@ typedef struct Game {
 	f32 shootingFireEndX;
 	
 	u32 gold;
+	
+	i32 day;
+	f64 dayStartTime;
+	f64 dayEndTime;
+	
+	u32 introButtonMashCount;
+	f64 introStartTime;
 } Game;
 
 static Game game;
@@ -230,26 +266,105 @@ void GameTrySpawnCustomer(void) {
 	
 	const u32 customerTextureIndex = GetRandomValue(0, (sizeof(CUSTOMER_TEXTURES) / sizeof(AssetTexture)) - 1);
 	
+	FoodEntryID desiredFoodID;
+	if (game.day >= 2) {
+		FoodEntryID available[] = {FOOD_ENTRY_ID_ROAST_LAMB, FOOD_ENTRY_ID_ROAST_CHICKEN, FOOD_ENTRY_ID_BURNT_ROAST_LAMB, FOOD_ENTRY_ID_BURNT_ROAST_CHICKEN};
+		desiredFoodID = available[GetRandomValue(0, (sizeof(available) / sizeof(FoodEntryID)) - 1)];
+	} else if (game.day >= 1) {
+		FoodEntryID available[] = {FOOD_ENTRY_ID_ROAST_LAMB, FOOD_ENTRY_ID_ROAST_CHICKEN};
+		desiredFoodID = available[GetRandomValue(0, (sizeof(available) / sizeof(FoodEntryID)) - 1)];
+	} else {
+		desiredFoodID = FOOD_ENTRY_ID_ROAST_CHICKEN;
+	}
+	
 	Customer customer = {
 		.state = CUSTOMER_STATE_WALKING_TO_SEAT,
 		.seat = seat,
 		.stateStartTime = GetTime(),
 		.stateEndTime = GetTime() + CustomerGetTimeForState(CUSTOMER_STATE_WALKING_TO_SEAT),
 		.texture = AssetsGetTexture(CUSTOMER_TEXTURES[customerTextureIndex]),
-		.desiredFoodID = FOOD_ENTRY_ID_ROAST_CHICKEN,
+		.desiredFoodID = desiredFoodID,
 	};
 	arrpush(game.customers, customer);
 }
 
-void GameInit(void) {
-	game = (Game) { 0 };
-	game.targetTex = LoadRenderTexture(SCREEN_WIDTH, SCREEN_HEIGHT);
+void GameEndScene(void) {
+	
+}
+
+void GameUpdateMusic(void) {
+	Music creepyMusic = AssetsGetMusic(ASSET_MUSIC_CREEPY_INTRO);
+	Music playMusic = AssetsGetMusic(ASSET_MUSIC_PLAYING);
+	if (IsMusicStreamPlaying(creepyMusic) && (game.state != GAME_STATE_INTRO)) {
+		StopMusicStream(creepyMusic);
+	}
+	if (!IsMusicStreamPlaying(creepyMusic) && (game.state == GAME_STATE_INTRO)) {
+		PlayMusicStream(creepyMusic);
+	}
+	if (IsMusicStreamPlaying(playMusic) && (game.state == GAME_STATE_INTRO)) {
+		StopMusicStream(playMusic);
+	}
+	if (!IsMusicStreamPlaying(playMusic) && (game.state != GAME_STATE_INTRO)) {
+		PlayMusicStream(playMusic);
+	}
+	
+	switch (game.state) {
+		case GAME_STATE_INTRO: {
+			UpdateMusicStream(creepyMusic);
+		} break;
+			
+		case GAME_STATE_DAY_START:
+		case GAME_STATE_PLAYING: {
+			UpdateMusicStream(playMusic);
+		} break;
+	}
+}
+
+void GameAdvanceDay(void) {
+	const f64 time = GetTime();
+	game.day++;
+	
+	game.summonBook.entryAvailable[0] = true;
+	game.summonBook.entryAvailable[1] = game.day >= 1;
+	
+	if (game.day > DAY_COUNT) {
+		GameEndScene();
+	}
+	
+	game.dayStartTime = time;
+	game.dayEndTime = time + DAY_DURATION_SECONDS;
+	arrfree(game.customers);
+	arrfree(game.foods);
+	arrfree(game.summons);
+	arrfree(game.freeSeats);
+	
 	for (u8 seatIndex = 0; seatIndex < SEAT_COUNT; seatIndex++) {
 		arrpush(game.freeSeats, seatIndex);
 	}
-	SummonBookInit(&game.summonBook);
-	PlayMusicStream(AssetsGetMusic());
+	
 	GameTrySpawnCustomer();
+	game.state = GAME_STATE_PLAYING;
+}
+
+i32 GameGetHour(void) {
+	const f64 time = GetTime();
+	f32 dayAmount = (f32)(game.dayStartTime - time) / (game.dayStartTime - game.dayEndTime);
+	return ((i32)(11.0f + (dayAmount * 11.0f)) % 12) + 1;
+}
+
+void GameGoToIntro(void) {
+	const f64 time = GetTime();
+	game.state = GAME_STATE_INTRO;
+	game.introStartTime = time;
+	game.introButtonMashCount = 0;
+}
+
+void GameInit(void) {
+	game = (Game) { .day = -1 };
+	game.targetTex = LoadRenderTexture(SCREEN_WIDTH, SCREEN_HEIGHT);
+	SummonBookInit(&game.summonBook);
+	
+	GameGoToIntro();
 }
 void GameDeinit(void) {
 	
@@ -257,11 +372,36 @@ void GameDeinit(void) {
 
 // MARK: Game Update
 
-void GameUpdate(void) {
+void GameUpdateIntro(void) {
+	const f64 time = GetTime();
+	if (time - game.introStartTime > 15.0f) {
+		if (IsKeyPressed(KEY_X) || IsGamepadButtonPressed(0, GAMEPAD_BUTTON_RIGHT_FACE_DOWN)) {
+			game.state = GAME_STATE_DAY_START;
+		}
+	} else {
+		if (IsKeyPressed(KEY_X) || IsGamepadButtonPressed(0, GAMEPAD_BUTTON_RIGHT_FACE_DOWN)) {
+			game.introButtonMashCount++;
+			if (game.introButtonMashCount >= 3) {
+				game.state = GAME_STATE_DAY_START;
+			}
+		}
+	}
+}
+
+void GameUpdateDayStart(void) {
+	if (IsKeyPressed(KEY_X) || IsGamepadButtonPressed(0, GAMEPAD_BUTTON_RIGHT_FACE_DOWN)) {
+		GameAdvanceDay();
+	}
+}
+
+void GameUpdatePlaying(void) {
 	const f64 time = GetTime();
 	const f32 dt = GetFrameTime();
 	
-	UpdateMusicStream(AssetsGetMusic());
+	if (time > game.dayEndTime) {
+		game.state = GAME_STATE_DAY_START;
+		return;
+	}
 	
 	// update hand
 	Vector2 handVector = { 0 };
@@ -283,7 +423,7 @@ void GameUpdate(void) {
 	if (handVectorLength > 1.0f) {
 		handVector = Vector2Scale(handVector, 1.0f / handVectorLength);
 	}
-
+	
 	// TODO: X on controller
 	if (IsKeyPressed(KEY_X) || IsGamepadButtonPressed(0, GAMEPAD_BUTTON_RIGHT_FACE_DOWN)) {
 		// activate hovered item
@@ -323,7 +463,7 @@ void GameUpdate(void) {
 		game.handShakeVector = Vector2Zero();
 		StopSound(AssetsGetSound(ASSET_SOUND_BURNING));
 	}
-
+	
 	if (Vector2LengthSqr(handVector) > 0.0f) {
 		Vector2 handAcceleration = Vector2Scale(handVector, dt * 1500.0f);
 		game.handVelocity = Vector2Add(game.handVelocity, handAcceleration);
@@ -455,7 +595,7 @@ void GameUpdate(void) {
 				arrpush(game.foods, food);
 			}
 			summon->dead = true;
-			PlaySound(AssetsGetSound(ASSET_SOUND_CHICKEN_DEAD));
+			PlaySound(AssetsGetSound(summon->deathSound));
 		}
 	}
 	
@@ -495,6 +635,24 @@ void GameUpdate(void) {
 	game.hoveringSummonBook = (game.handPosition.x > 185.0f) && (game.handPosition.x < 235.0f) && !game.summonBookToggle;
 }
 
+void GameUpdate(void) {
+	GameUpdateMusic();
+	
+	switch (game.state) {
+		case GAME_STATE_INTRO: {
+			GameUpdateIntro();
+		} break;
+		
+		case GAME_STATE_DAY_START: {
+			GameUpdateDayStart();
+		} break;
+		
+		case GAME_STATE_PLAYING: {
+			GameUpdatePlaying();
+		} break;
+	}
+}
+
 Vector2 GameGetMousePosition(void) {
 	f32 renderWidth = (f32)GetScreenWidth();
 	f32 renderHeight = (f32)GetScreenHeight();
@@ -508,124 +666,234 @@ Vector2 GameGetMousePosition(void) {
 
 // MARK: Game Render
 
-void GameRender(void) {
+void GameRenderIntro(void) {
+	const f64 time = GetTime();
+	
+	char textBuf[64];
+	
+	DrawTexture(AssetsGetTexture(ASSET_TEXTURE_CREEP_INTRO), 0, 0, WHITE);
+		
+	if (time - game.introStartTime > 14.0f) {
+		DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, (Color) { 48, 44, 46, 255 });
+		
+		if (time - game.introStartTime > 14.0f) {
+			DrawTextDefault("You purchase a summoner's guide", (Vector2) { 10, 10 }, WHITE);
+			DrawTextDefault("from the stranger.", (Vector2) { 10, 20 }, WHITE);
+		}
+		
+		if (time - game.introStartTime > 15.0f) {
+			sprintf(textBuf, "You have %u days to pay them back.", DAY_COUNT);
+			DrawTextDefault(textBuf, (Vector2) { 10, 60 }, WHITE);
+			
+			f32 fadeAmount = ld_min((time - (game.introStartTime + 15.0f)) / 2.8f, 1.0f);
+			
+			f32 offsetY = floorf((f32)sin(time) * 4.0f);
+			DrawTexture(AssetsGetTexture(ASSET_TEXTURE_BUTTON_X), 86, 107 + offsetY, ColorAlpha(WHITE, fadeAmount));
+			DrawTextDefault("continue", (Vector2) { 106, 110 + offsetY }, ColorAlpha(WHITE, fadeAmount));
+		}
+	} else if (time - game.introStartTime > 11.0f) {
+		f32 fadeAmount = ld_min((time - (game.introStartTime + 11.0f)) / 2.8f, 1.0f);
+		DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, ColorAlpha((Color) { 48, 44, 46, 255 }, fadeAmount));
+	} else if (time - game.introStartTime > 8.0f) {
+		DrawTexture(AssetsGetTexture(ASSET_TEXTURE_SPEECH_INTRO0), 20, 24, WHITE);
+		DrawTextDefault("I can offer something...", (Vector2) { 28, 28 }, BLACK);
+	} else if (time - game.introStartTime > 5.0f) {
+		DrawTexture(AssetsGetTexture(ASSET_TEXTURE_SPEECH_INTRO0), 20, 24, WHITE);
+		DrawTextDefault("Business looks slow...", (Vector2) { 28, 28 }, BLACK);
+	} else {
+		f32 fadeAmount = ld_min((time - game.introStartTime) / 4.8f, 1.0f);
+		DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, ColorAlpha((Color) { 0, 0, 0, 255 }, 1.0f - fadeAmount));
+	}
+}
+
+void GameRenderDayStart(void) {
 	const f64 time = GetTime();
 
+	char textBuf[64];
+	DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, (Color) { 48, 44, 46, 255 });
+	
+	const i32 daysLeft = (DAY_COUNT - game.day) - 1;
+	
+	if (daysLeft == 0) {
+		if (game.gold < SCROLL_BOOK_COST) {
+			sprintf(textBuf, "FAILURE");
+			DrawTextDefault(textBuf, (Vector2) { 96, 30 }, RED);
+			
+			sprintf(textBuf, "the stranger returns and takes");
+			DrawTextDefault(textBuf, (Vector2) { 20, 60 }, WHITE);
+			
+			sprintf(textBuf, "your soul as payment.");
+			DrawTextDefault(textBuf, (Vector2) { 50, 80 }, WHITE);
+			
+			f32 offsetY = floorf((f32)sin(time) * 4.0f);
+			DrawTexture(AssetsGetTexture(ASSET_TEXTURE_BUTTON_X), 88, 107 + offsetY, WHITE);
+			DrawTextDefault("retry", (Vector2) { 108, 110 + offsetY }, WHITE);
+		} else {
+			sprintf(textBuf, "SUCCESS");
+			DrawTextDefault(textBuf, (Vector2) { 96, 30 }, GREEN);
+			
+			sprintf(textBuf, "you pay off debt to stranger");
+			DrawTextDefault(textBuf, (Vector2) { 24, 60 }, WHITE);
+			
+			sprintf(textBuf, "and live to cook another day.");
+			DrawTextDefault(textBuf, (Vector2) { 22, 80 }, WHITE);
+			
+			f32 offsetY = floorf((f32)sin(time) * 4.0f);
+			DrawTexture(AssetsGetTexture(ASSET_TEXTURE_BUTTON_X), 72, 107 + offsetY, WHITE);
+			DrawTextDefault("play again", (Vector2) { 92, 110 + offsetY }, WHITE);
+		}
+	} else {
+		sprintf(textBuf, "%d day%s remain%s.", daysLeft, daysLeft == 1 ? "" : "s", daysLeft == 1 ? "s" : "");
+		
+		DrawTextDefault(textBuf, (Vector2) { 76, 50 }, WHITE);
+		
+		f32 offsetY = floorf((f32)sin(time) * 4.0f);
+		DrawTexture(AssetsGetTexture(ASSET_TEXTURE_BUTTON_X), 85, 77 + offsetY, WHITE);
+		DrawTextDefault("continue", (Vector2) { 105, 80 + offsetY }, WHITE);
+	}
+}
+
+void GameRenderPlaying(void) {
+	const f64 time = GetTime();
+	
+	DrawTexture(AssetsGetTexture(ASSET_TEXTURE_WALL), 0, 0, WHITE);
+	
+	// draw customers
+	for (u32 customerIdx = 0; customerIdx < arrlen(game.customers); customerIdx++) {
+		Customer* customer = &game.customers[customerIdx];
+		
+		Vector2 characterOffset = { floorf((f32)-customer->texture.width * 0.5f), (f32)-(customer->texture.height - 1) };
+		DrawTextureV(customer->texture, Vector2Add(customer->currentPosition, characterOffset), WHITE);
+		
+		if (customer->state == CUSTOMER_STATE_LOOKING_AT_MENU) {
+			Vector2 thinkingOffset = { -10.0f, (f32)-(customer->texture.height + 14) };
+			DrawTextureV(AssetsGetTexture(ASSET_TEXTURE_THINKING), Vector2Add(customer->currentPosition, thinkingOffset), WHITE);
+		}
+		if (customer->state == CUSTOMER_STATE_WAITING_FOR_MEAL) {
+			Vector2 speechOffset = { 3.0f, (f32)-(customer->texture.height + 9) };
+			DrawTextureCenteredV(AssetsGetTexture(ASSET_TEXTURE_SPEECH), Vector2Add(customer->currentPosition, speechOffset), WHITE);
+			
+			FoodEntry food_entry = FOOD_ENTRIES[customer->desiredFoodID];
+			DrawTextureCenteredV(AssetsGetTexture(food_entry.texture), Vector2Add(customer->currentPosition, speechOffset), WHITE);
+		}
+	}
+
+	DrawTexture(AssetsGetTexture(ASSET_TEXTURE_SHRINE0 + fabsf(roundf((f32)sin(GetTime() * 5.0) * 2.0f))), 190, 54, WHITE);
+	DrawTexture(AssetsGetTexture(ASSET_TEXTURE_COUNTER), 0, 69, WHITE);
+	
+	// draw summon book prompt
+	if (game.hoveringSummonBook) {
+		DrawTextEx(AssetsGetFont(), "summon", (Vector2) { 193, 77 }, (f32)AssetsGetFont().baseSize, 0.0f, BLACK);
+		DrawTextEx(AssetsGetFont(), "summon", (Vector2) { 193, 76 }, (f32)AssetsGetFont().baseSize, 0.0f, WHITE);
+		DrawTexture(AssetsGetTexture(ASSET_TEXTURE_BUTTON_X), 202, 46, WHITE);
+	}
+	
+	// draw summons
+	for (u32 summonIdx = 0; summonIdx < arrlen(game.summons); summonIdx++) {
+		Summon* summon = &game.summons[summonIdx];
+		u32 frame = (u32)((time - summon->animationStartTime) * summon->animationSpeed) % summon->textureCount;
+		Texture2D summonTexture = AssetsGetTexture(summon->textures[frame]);
+		DrawTextureV(summonTexture, Vector2Add(summon->position, (Vector2) { (f32)-summonTexture.width/2, (f32)-summonTexture.height }), WHITE);
+	}
+	
+	// draw foods
+	for (u32 foodIdx = 0; foodIdx < arrlen(game.foods); foodIdx++) {
+		Food* food = &game.foods[foodIdx];
+		const FoodEntry* foodEntry = &FOOD_ENTRIES[food->entryID];
+		Texture2D foodTexture = AssetsGetTexture(foodEntry->texture);
+		DrawTextureV(foodTexture, Vector2Add(food->position, (Vector2) { (f32)-foodTexture.width/2, (f32)-foodTexture.height }), WHITE);
+	}
+	
+	// draw flame
+	if (game.shootingFire) {
+		DrawRectangle((i32)(game.synthesizedHandPosition.x - 3.0f), (i32)floorf(game.synthesizedHandPosition.y), 6, (i32)floorf(TABLETOP_Y - game.synthesizedHandPosition.y), (Color) { 255, 137, 51, 255 });
+		DrawRectangle((i32)(game.synthesizedHandPosition.x - 2.0f), (i32)floorf(game.synthesizedHandPosition.y), 4, (i32)floorf(TABLETOP_Y - game.synthesizedHandPosition.y), (Color) { 255, 238, 131, 255 });
+	}
+	
+	// draw summon cook bars
+	for (u32 summonIdx = 0; summonIdx < arrlen(game.summons); summonIdx++) {
+		Summon* summon = &game.summons[summonIdx];
+		if (summon->cookAmount > 0.0f) {
+			const Vector2 meterOffset = (Vector2) { 0.0f, 10.0f };
+			const f32 meterWidth = 27.0f;
+			const Color cookedColor = { 128, 156, 97, 255 };
+			const Color burntColor = { 170, 108, 108, 255 };
+			const f32 totalRange = summon->cookBurntDuration + 1.0f;
+			
+			i32 amountLineX = (i32)roundf(meterOffset.x + ((summon->cookAmount / totalRange) * meterWidth));
+			i32 cookedX = (i32)roundf(meterOffset.x + ((summon->cookDoneDuration / totalRange) * meterWidth));
+			i32 burntX = (i32)roundf(meterOffset.x + ((summon->cookBurntDuration / totalRange) * meterWidth));
+			
+			DrawTextureCenteredV(AssetsGetTexture(ASSET_TEXTURE_METER_BOTTOM), Vector2Add(summon->position, meterOffset), WHITE);
+			DrawRectangle(summon->position.x + cookedX - (meterWidth / 2.0f), meterOffset.y + summon->position.y - 2, meterWidth - cookedX + 1, 5, cookedColor);
+			DrawRectangle(summon->position.x + burntX - (meterWidth / 2.0f), meterOffset.y + summon->position.y - 2, meterWidth - burntX + 1, 5, burntColor);
+			DrawLine(summon->position.x + amountLineX - (meterWidth / 2.0f), summon->position.y + meterOffset.y - 2, summon->position.x + amountLineX - (meterWidth / 2.0f), summon->position.y + meterOffset.y + 3, RED);
+			DrawTextureCenteredV(AssetsGetTexture(ASSET_TEXTURE_METER_TOP), Vector2Add(summon->position, meterOffset), WHITE);
+		}
+	}
+	
+	// draw summon book
+	if (game.summonBookAmount > 0.0f) {
+		f32 startOpacity = 0.0f;
+		f32 endOpacity = 0.4f;
+		f32 opacity = Lerp(startOpacity, endOpacity, EaseInOutQuart(game.summonBookAmount));
+		DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, ColorAlpha((Color) { 48, 44, 46, 255 }, opacity));
+		
+		SummonBookDraw(&game.summonBook);
+		
+		Color actionsTint = game.summonBookToggle ? WHITE : BLANK;
+		DrawTextDefault("select", (Vector2) { 36, 128 }, actionsTint);
+		DrawTextureCenteredV(AssetsGetTexture(ASSET_TEXTURE_BUTTON_X), (Vector2) { 20, 132 }, actionsTint);
+		
+		DrawTextDefault("leave", (Vector2) { 200, 128 }, actionsTint);
+		DrawTextureCenteredV(AssetsGetTexture(ASSET_TEXTURE_BUTTON_CIRCLE), (Vector2) { 184, 132 }, actionsTint);
+	}
+	
+	if (!game.summonBookToggle) {
+		char textBuf[32];
+		
+		// draw day
+		sprintf(textBuf, "Day %u of %u, %dpm", game.day + 1, DAY_COUNT, GameGetHour());
+		DrawTextDefault(textBuf, (Vector2) { 8, 9 }, BLACK);
+		DrawTextDefault(textBuf, (Vector2) { 8, 8 }, (Color) { 241, 233, 230, 255 });
+
+		// draw gold amount
+		DrawTexture(AssetsGetTexture(ASSET_TEXTURE_GOLD_ICON), 8, 131, WHITE);
+		
+		sprintf(textBuf, "%u/%u", game.gold, SCROLL_BOOK_COST);
+		DrawTextDefault(textBuf, (Vector2) { 20, 131 }, (Color) { 241, 233, 230, 255 });
+	}
+	
+	// draw hand (always on top)
+	{
+		AssetTexture currentHandTexture = game.shootingFire ? ASSET_TEXTURE_HAND1 : ASSET_TEXTURE_HAND0;
+		AssetTexture currentHandTrailTexture = game.shootingFire ? ASSET_TEXTURE_HAND1_TRAIL : ASSET_TEXTURE_HAND0_TRAIL;
+		for (u32 handTrailIndex = 0; handTrailIndex < HAND_TRAIL_LENGTH; handTrailIndex++) {
+			const Vector2 trailPosition = game.handPositionHistory[(game.handPositionHistoryHead + handTrailIndex) % HAND_TRAIL_LENGTH];
+			const f32 trailAlpha = ld_min(Vector2Distance(game.handPosition, trailPosition) / 4.0f, 1.0f);
+			Color trailColor = HAND_TRAIL_COLORS[handTrailIndex];
+			trailColor.a = (u8)((f32)trailColor.a * trailAlpha);
+			DrawTextureCenteredV(AssetsGetTexture(currentHandTrailTexture), game.handPositionHistory[(game.handPositionHistoryHead + handTrailIndex) % HAND_TRAIL_LENGTH], trailColor);
+		}
+		DrawTextureCenteredV(AssetsGetTexture(currentHandTexture), game.synthesizedHandPosition, WHITE);
+	}
+}
+
+void GameRender(void) {
 	BeginTextureMode(game.targetTex);
 	{
-		DrawTexture(AssetsGetTexture(ASSET_TEXTURE_WALL), 0, 0, WHITE);
-		
-		// draw customers
-		for (u32 customerIdx = 0; customerIdx < arrlen(game.customers); customerIdx++) {
-			Customer* customer = &game.customers[customerIdx];
+		switch (game.state) {
+			case GAME_STATE_INTRO: {
+				GameRenderIntro();
+			} break;
 			
-			Vector2 characterOffset = { floorf((f32)-customer->texture.width * 0.5f), (f32)-(customer->texture.height - 1) };
-			DrawTextureV(customer->texture, Vector2Add(customer->currentPosition, characterOffset), WHITE);
+			case GAME_STATE_DAY_START: {
+				GameRenderDayStart();
+			} break;
 			
-			if (customer->state == CUSTOMER_STATE_LOOKING_AT_MENU) {
-				Vector2 thinkingOffset = { -10.0f, (f32)-(customer->texture.height + 14) };
-				DrawTextureV(AssetsGetTexture(ASSET_TEXTURE_THINKING), Vector2Add(customer->currentPosition, thinkingOffset), WHITE);
-			}
-			if (customer->state == CUSTOMER_STATE_WAITING_FOR_MEAL) {
-				Vector2 speechOffset = { 3.0f, (f32)-(customer->texture.height + 9) };
-				DrawTextureCenteredV(AssetsGetTexture(ASSET_TEXTURE_SPEECH), Vector2Add(customer->currentPosition, speechOffset), WHITE);
-				
-				FoodEntry food_entry = FOOD_ENTRIES[customer->desiredFoodID];
-				DrawTextureCenteredV(AssetsGetTexture(food_entry.texture), Vector2Add(customer->currentPosition, speechOffset), WHITE);
-			}
-		}
-	
-		DrawTexture(AssetsGetTexture(ASSET_TEXTURE_SHRINE0 + fabsf(roundf((f32)sin(GetTime() * 5.0) * 2.0f))), 190, 54, WHITE);
-		DrawTexture(AssetsGetTexture(ASSET_TEXTURE_COUNTER), 0, 69, WHITE);
-		
-		// draw summon book prompt
-		if (game.hoveringSummonBook) {
-			DrawTextEx(AssetsGetFont(), "summon", (Vector2) { 193, 77 }, (f32)AssetsGetFont().baseSize, 0.0f, BLACK);
-			DrawTextEx(AssetsGetFont(), "summon", (Vector2) { 193, 76 }, (f32)AssetsGetFont().baseSize, 0.0f, WHITE);
-			DrawTexture(AssetsGetTexture(ASSET_TEXTURE_BUTTON_X), 202, 46, WHITE);
-		}
-		
-		// draw summons
-		for (u32 summonIdx = 0; summonIdx < arrlen(game.summons); summonIdx++) {
-			Summon* summon = &game.summons[summonIdx];
-			u32 frame = (u32)((time - summon->animationStartTime) * summon->animationSpeed) % summon->textureCount;
-			Texture2D summonTexture = AssetsGetTexture(summon->textures[frame]);
-			DrawTextureV(summonTexture, Vector2Add(summon->position, (Vector2) { (f32)-summonTexture.width/2, (f32)-summonTexture.height }), WHITE);
-		}
-		
-		// draw foods
-		for (u32 foodIdx = 0; foodIdx < arrlen(game.foods); foodIdx++) {
-			Food* food = &game.foods[foodIdx];
-			const FoodEntry* foodEntry = &FOOD_ENTRIES[food->entryID];
-			Texture2D foodTexture = AssetsGetTexture(foodEntry->texture);
-			DrawTextureV(foodTexture, Vector2Add(food->position, (Vector2) { (f32)-foodTexture.width/2, (f32)-foodTexture.height }), WHITE);
-		}
-		
-		// draw flame
-		if (game.shootingFire) {
-			DrawRectangle((i32)(game.synthesizedHandPosition.x - 3.0f), (i32)floorf(game.synthesizedHandPosition.y), 6, (i32)floorf(TABLETOP_Y - game.synthesizedHandPosition.y), (Color) { 255, 137, 51, 255 });
-			DrawRectangle((i32)(game.synthesizedHandPosition.x - 2.0f), (i32)floorf(game.synthesizedHandPosition.y), 4, (i32)floorf(TABLETOP_Y - game.synthesizedHandPosition.y), (Color) { 255, 238, 131, 255 });
-		}
-		
-		// draw summon cook bars
-		for (u32 summonIdx = 0; summonIdx < arrlen(game.summons); summonIdx++) {
-			Summon* summon = &game.summons[summonIdx];
-			if (summon->cookAmount > 0.0f) {
-				const Vector2 meterOffset = (Vector2) { 0.0f, 10.0f };
-				const f32 meterWidth = 27.0f;
-				const Color cookedColor = { 128, 156, 97, 255 };
-				const Color burntColor = { 170, 108, 108, 255 };
-				const f32 totalRange = summon->cookBurntDuration + 1.0f;
-				
-				i32 amountLineX = (i32)roundf(meterOffset.x + ((summon->cookAmount / totalRange) * meterWidth));
-				i32 cookedX = (i32)roundf(meterOffset.x + ((summon->cookDoneDuration / totalRange) * meterWidth));
-				i32 burntX = (i32)roundf(meterOffset.x + ((summon->cookBurntDuration / totalRange) * meterWidth));
-				
-				DrawTextureCenteredV(AssetsGetTexture(ASSET_TEXTURE_METER_BOTTOM), Vector2Add(summon->position, meterOffset), WHITE);
-				DrawRectangle(summon->position.x + cookedX - (meterWidth / 2.0f), meterOffset.y + summon->position.y - 2, meterWidth - cookedX + 1, 5, cookedColor);
-				DrawRectangle(summon->position.x + burntX - (meterWidth / 2.0f), meterOffset.y + summon->position.y - 2, meterWidth - burntX + 1, 5, burntColor);
-				DrawLine(summon->position.x + amountLineX - (meterWidth / 2.0f), summon->position.y + meterOffset.y - 2, summon->position.x + amountLineX - (meterWidth / 2.0f), summon->position.y + meterOffset.y + 3, RED);
-				DrawTextureCenteredV(AssetsGetTexture(ASSET_TEXTURE_METER_TOP), Vector2Add(summon->position, meterOffset), WHITE);
-			}
-		}
-		
-		// draw summon book
-		if (game.summonBookAmount > 0.0f) {
-			f32 startOpacity = 0.0f;
-			f32 endOpacity = 0.4f;
-			f32 opacity = Lerp(startOpacity, endOpacity, EaseInOutQuart(game.summonBookAmount));
-			DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, ColorAlpha((Color) { 48, 44, 46, 255 }, opacity));
-			
-			SummonBookDraw(&game.summonBook);
-			
-			Color actionsTint = game.summonBookToggle ? WHITE : BLANK;
-			DrawTextDefault("select", (Vector2) { 36, 128 }, actionsTint);
-			DrawTextureCenteredV(AssetsGetTexture(ASSET_TEXTURE_BUTTON_X), (Vector2) { 20, 132 }, actionsTint);
-			
-			DrawTextDefault("leave", (Vector2) { 200, 128 }, actionsTint);
-			DrawTextureCenteredV(AssetsGetTexture(ASSET_TEXTURE_BUTTON_CIRCLE), (Vector2) { 184, 132 }, actionsTint);
-		}
-		
-		// draw gold amount
-		if (!game.summonBookToggle) {
-			DrawTexture(AssetsGetTexture(ASSET_TEXTURE_GOLD_ICON), 8, 128, WHITE);
-			char goldText[32];
-			sprintf(goldText, "%u", game.gold);
-			DrawTextDefault(goldText, (Vector2) { 19, 128 }, (Color) { 241, 233, 230, 255 });
-		}
-		
-		// draw hand (always on top)
-		{
-			AssetTexture currentHandTexture = game.shootingFire ? ASSET_TEXTURE_HAND1 : ASSET_TEXTURE_HAND0;
-			AssetTexture currentHandTrailTexture = game.shootingFire ? ASSET_TEXTURE_HAND1_TRAIL : ASSET_TEXTURE_HAND0_TRAIL;
-			for (u32 handTrailIndex = 0; handTrailIndex < HAND_TRAIL_LENGTH; handTrailIndex++) {
-				const Vector2 trailPosition = game.handPositionHistory[(game.handPositionHistoryHead + handTrailIndex) % HAND_TRAIL_LENGTH];
-				const f32 trailAlpha = ld_min(Vector2Distance(game.handPosition, trailPosition) / 4.0f, 1.0f);
-				Color trailColor = HAND_TRAIL_COLORS[handTrailIndex];
-				trailColor.a = (u8)((f32)trailColor.a * trailAlpha);
-				DrawTextureCenteredV(AssetsGetTexture(currentHandTrailTexture), game.handPositionHistory[(game.handPositionHistoryHead + handTrailIndex) % HAND_TRAIL_LENGTH], trailColor);
-			}
-			DrawTextureCenteredV(AssetsGetTexture(currentHandTexture), game.synthesizedHandPosition, WHITE);
+			case GAME_STATE_PLAYING: {
+				GameRenderPlaying();
+			} break;
 		}
 	}
 	EndTextureMode();
@@ -669,12 +937,33 @@ void GameSummonChicken(void) {
 		.speed = 16.0f,
 		.position = (Vector2) { 208, 69 },
 		.cookAmount = 0.0f,
-		.cookDoneDuration = 1.5f,
+		.cookDoneDuration = 0.5f,
 		.cookBurntDuration = 2.25f,
 		.onCookDoneProducesFoodID = FOOD_ENTRY_ID_ROAST_CHICKEN,
 		.onCookBurntProducesFoodID = FOOD_ENTRY_ID_BURNT_ROAST_CHICKEN,
+		.deathSound = ASSET_SOUND_CHICKEN_DEAD,
 	};
 	arrpush(game.summons, summon);
 	PlaySound(AssetsGetSound(ASSET_SOUND_CHICKEN_SUMMON));
+	game.summonBookToggle = false;
+}
+
+void GameSummonSheep(void) {
+	const Summon summon = {
+		.textures = { ASSET_TEXTURE_SHEEP0 },
+		.textureCount = 1,
+		.animationStartTime = GetTime(),
+		.animationSpeed = 6.0f,
+		.speed = 10.0f,
+		.position = (Vector2) { 208, 69 },
+		.cookAmount = 0.0f,
+		.cookDoneDuration = 1.5f,
+		.cookBurntDuration = 2.25f,
+		.onCookDoneProducesFoodID = FOOD_ENTRY_ID_ROAST_LAMB,
+		.onCookBurntProducesFoodID = FOOD_ENTRY_ID_BURNT_ROAST_LAMB,
+		.deathSound = ASSET_SOUND_SHEEP_DEAD,
+	};
+	arrpush(game.summons, summon);
+	PlaySound(AssetsGetSound(ASSET_SOUND_SHEEP_SUMMON));
 	game.summonBookToggle = false;
 }

@@ -5,3 +5,4 @@ void GameUpdate(void);
 void GameRender(void);
 
 void GameSummonChicken(void);
+void GameSummonSheep(void);
