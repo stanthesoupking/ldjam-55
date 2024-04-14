@@ -279,9 +279,15 @@ void GameUpdate(void) {
 	if (IsKeyDown(KEY_S)) {
 		handVector.y += 1.0f;
 	}
-	
+	handVector.x += GetGamepadAxisMovement(0, GAMEPAD_AXIS_LEFT_X);
+	handVector.y += GetGamepadAxisMovement(0, GAMEPAD_AXIS_LEFT_Y);
+	f32 handVectorLength = Vector2Length(handVector);
+	if (handVectorLength > 1.0f) {
+		handVector = Vector2Scale(handVector, 1.0f / handVectorLength);
+	}
+
 	// TODO: X on controller
-	if (IsKeyPressed(KEY_X)) {
+	if (IsKeyPressed(KEY_X) || IsGamepadButtonPressed(0, GAMEPAD_BUTTON_RIGHT_FACE_DOWN)) {
 		// activate hovered item
 		if (game.hoveringSummonBook) {
 			game.summonBookToggle = !game.summonBookToggle;
@@ -289,14 +295,14 @@ void GameUpdate(void) {
 	}
 	
 	// TODO: Circle on controller
-	if (IsKeyPressed(KEY_C)) {
+	if (IsKeyPressed(KEY_C) || IsGamepadButtonPressed(0, GAMEPAD_BUTTON_RIGHT_FACE_RIGHT)) {
 		if (game.summonBookToggle) {
 			game.summonBookToggle = false;
 		}
 	}
 	
 	// TODO: Square on controller
-	if (IsKeyDown(KEY_V) && (!game.summonBookToggle)) {
+	if ((IsKeyDown(KEY_V) || IsGamepadButtonDown(0, GAMEPAD_BUTTON_RIGHT_FACE_LEFT)) && (!game.summonBookToggle)) {
 		game.shootingFire = true;
 		const f32 shakeFrequency = 0.02f;
 		if ((time - game.handShakeTime) > shakeFrequency) {
@@ -309,7 +315,7 @@ void GameUpdate(void) {
 	}
 
 	if (Vector2LengthSqr(handVector) > 0.0f) {
-		Vector2 handAcceleration = Vector2Scale(Vector2Normalize(handVector), dt * 1700.0f);
+		Vector2 handAcceleration = Vector2Scale(handVector, dt * 1500.0f);
 		game.handVelocity = Vector2Add(game.handVelocity, handAcceleration);
 	}
 	game.handPosition = Vector2Add(Vector2Add(game.handPosition, Vector2Scale(game.handVelocity, dt)), (Vector2) { 0, (f32)sin(GetTime() * 4.0) * 0.25f });

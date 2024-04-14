@@ -61,7 +61,7 @@ void SummonBookUpdate(SummonBook* book, bool active, Vector2 bookPosition, Vecto
 		if ((handPosition.x > hoverRect.x) && (handPosition.y > hoverRect.y) && (handPosition.x < hoverRect.x + hoverRect.width) && (handPosition.y < hoverRect.y + hoverRect.height)) {
 			book->entryHover[entryIndex] = true;
 			
-			if (IsKeyPressed(KEY_X)) {
+			if (IsKeyPressed(KEY_X) || IsGamepadButtonPressed(0, GAMEPAD_BUTTON_RIGHT_FACE_DOWN)) {
 				entry.summonFunc();
 			}
 			break;
