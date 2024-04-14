@@ -21,14 +21,30 @@ typedef enum AssetTexture {
 	ASSET_TEXTURE_CHICKEN2,
 	ASSET_TEXTURE_RCHICKEN0,
 	ASSET_TEXTURE_BRCHICKEN0,
+	ASSET_TEXTURE_METER_BOTTOM,
+	ASSET_TEXTURE_METER_TOP,
 	ASSET_TEXTURE_BUTTON_X,
 	ASSET_TEXTURE_BUTTON_CIRCLE,
+	ASSET_TEXTURE_GOLD_ICON,
 	ASSET_TEXTURE_COUNT,
 } AssetTexture;
+
+typedef enum AssetSound {
+	ASSET_SOUND_CHICKEN_SUMMON,
+	ASSET_SOUND_CHICKEN_DEAD,
+	ASSET_SOUND_BURNING,
+	ASSET_SOUND_WOOSH,
+	ASSET_SOUND_CRUNCH,
+	ASSET_SOUND_COIN0,
+	ASSET_SOUND_COIN1,
+	ASSET_SOUND_COIN2,
+	ASSET_SOUND_COUNT,
+} AssetSound;
 
 void AssetsInit(void);
 void AssetsDeinit(void);
 
 Texture2D AssetsGetTexture(AssetTexture texture);
-
+Sound AssetsGetSound(AssetSound sound);
 Font AssetsGetFont(void);
+Music AssetsGetMusic(void);

@@ -107,7 +107,7 @@ f32 CustomerGetTimeForState(CustomerState state) {
 			
 		case CUSTOMER_STATE_WAITING_FOR_MEAL:
 		case CUSTOMER_STATE_EATING_MEAL: {
-			return 1.0f; // todo
+			return 1.0f;
 		} break;
 	
 		case CUSTOMER_STATE_INIT:
@@ -164,6 +164,7 @@ typedef struct Summon {
 	f32 cookBurntDuration;
 	FoodEntryID onCookDoneProducesFoodID;
 	FoodEntryID onCookBurntProducesFoodID;
+	bool dead;
 } Summon;
 
 typedef enum SummonBookAnimationStateMode {
@@ -210,6 +211,10 @@ typedef struct Game {
 	bool hoveringSummonBook;
 	
 	bool shootingFire;
+	f32 shootingFireStartX;
+	f32 shootingFireEndX;
+	
+	u32 gold;
 } Game;
 
 static Game game;
@@ -243,17 +248,8 @@ void GameInit(void) {
 		arrpush(game.freeSeats, seatIndex);
 	}
 	SummonBookInit(&game.summonBook);
+	PlayMusicStream(AssetsGetMusic());
 	GameTrySpawnCustomer();
-	
-	{
-		const Food food = { .position = (Vector2) { 100, 70 }, .entryID = FOOD_ENTRY_ID_ROAST_CHICKEN };
-		arrpush(game.foods, food);
-	}
-	
-	{
-		const Food food = { .position = (Vector2) { 140, 70 }, .entryID = FOOD_ENTRY_ID_BURNT_ROAST_CHICKEN };
-		arrpush(game.foods, food);
-	}
 }
 void GameDeinit(void) {
 	
@@ -264,6 +260,8 @@ void GameDeinit(void) {
 void GameUpdate(void) {
 	const f64 time = GetTime();
 	const f32 dt = GetFrameTime();
+	
+	UpdateMusicStream(AssetsGetMusic());
 	
 	// update hand
 	Vector2 handVector = { 0 };
@@ -290,6 +288,7 @@ void GameUpdate(void) {
 	if (IsKeyPressed(KEY_X) || IsGamepadButtonPressed(0, GAMEPAD_BUTTON_RIGHT_FACE_DOWN)) {
 		// activate hovered item
 		if (game.hoveringSummonBook) {
+			PlaySound(AssetsGetSound(ASSET_SOUND_WOOSH));
 			game.summonBookToggle = !game.summonBookToggle;
 		}
 	}
@@ -297,21 +296,32 @@ void GameUpdate(void) {
 	// TODO: Circle on controller
 	if (IsKeyPressed(KEY_C) || IsGamepadButtonPressed(0, GAMEPAD_BUTTON_RIGHT_FACE_RIGHT)) {
 		if (game.summonBookToggle) {
+			PlaySound(AssetsGetSound(ASSET_SOUND_WOOSH));
 			game.summonBookToggle = false;
 		}
 	}
 	
 	// TODO: Square on controller
 	if ((IsKeyDown(KEY_V) || IsGamepadButtonDown(0, GAMEPAD_BUTTON_RIGHT_FACE_LEFT)) && (!game.summonBookToggle)) {
+		Sound burnSound = AssetsGetSound(ASSET_SOUND_BURNING);
+		if (!IsSoundPlaying(burnSound)) {
+			PlaySound(burnSound);
+		}
+		
 		game.shootingFire = true;
 		const f32 shakeFrequency = 0.02f;
 		if ((time - game.handShakeTime) > shakeFrequency) {
 			game.handShakeVector = (Vector2) { (f32)GetRandomValue(-1, 1), (f32)GetRandomValue(-1, 1) };
 			game.handShakeTime = time;
 		}
+		
+		const f32 shootingFireRadius = 6.0f;
+		game.shootingFireStartX = game.synthesizedHandPosition.x - shootingFireRadius;
+		game.shootingFireEndX = game.synthesizedHandPosition.x + shootingFireRadius;
 	} else {
 		game.shootingFire = false;
 		game.handShakeVector = Vector2Zero();
+		StopSound(AssetsGetSound(ASSET_SOUND_BURNING));
 	}
 
 	if (Vector2LengthSqr(handVector) > 0.0f) {
@@ -333,12 +343,22 @@ void GameUpdate(void) {
 	for (u32 customerIdx = 0; customerIdx < arrlen(game.customers); customerIdx++) {
 		Customer* customer = &game.customers[customerIdx];
 		
+		i32 interestedFoodIndex = -1;
+		for (u32 foodIdx = 0; foodIdx < arrlen(game.foods); foodIdx++) {
+			Food* food = &game.foods[foodIdx];
+			if (food->entryID == customer->desiredFoodID) {
+				if ((food->position.x >= SEAT_START_X[customer->seat]) && (food->position.x <= SEAT_END_X[customer->seat])) {
+					interestedFoodIndex = foodIdx;
+					break;
+				}
+			}
+		}
+		
 		switch (customer->state) {
 			case CUSTOMER_STATE_INIT:
 			case CUSTOMER_STATE_WALKING_TO_SEAT:
 			case CUSTOMER_STATE_GETTING_ON_SEAT:
 			case CUSTOMER_STATE_LOOKING_AT_MENU:
-			case CUSTOMER_STATE_EATING_MEAL:
 			case CUSTOMER_STATE_GETTING_OFF_SEAT:
 			case CUSTOMER_STATE_WALKING_TO_EXIT:
 			case CUSTOMER_STATE_DEINIT: {
@@ -357,17 +377,26 @@ void GameUpdate(void) {
 				
 			case CUSTOMER_STATE_WAITING_FOR_MEAL: {
 				// check if meal is ready
-				for (u32 foodIdx = 0; foodIdx < arrlen(game.foods); foodIdx++) {
-					Food* food = &game.foods[foodIdx];
-					if (food->entryID == customer->desiredFoodID) {
-						if ((food->position.x >= SEAT_START_X[customer->seat]) && (food->position.x <= SEAT_END_X[customer->seat])) {
-							arrdel(game.foods, foodIdx);
-							customer->state = CUSTOMER_STATE_GETTING_OFF_SEAT;
-							customer->stateStartTime = time;
-							customer->stateEndTime = time + CustomerGetTimeForState(customer->state);
-							break;
-						}
+				if (interestedFoodIndex != -1) {
+					customer->state = CUSTOMER_STATE_EATING_MEAL;
+					customer->stateStartTime = time;
+					customer->stateEndTime = time + CustomerGetTimeForState(customer->state);
+				}
+			} break;
+				
+			case CUSTOMER_STATE_EATING_MEAL: {
+				if (time > customer->stateEndTime) {
+					PlaySound(AssetsGetSound(ASSET_SOUND_CRUNCH));
+					PlaySound(AssetsGetSound(ASSET_SOUND_COIN0 + GetRandomValue(0, 2)));
+					
+					game.gold += 10;
+					
+					if (interestedFoodIndex != -1) {
+						arrdel(game.foods, interestedFoodIndex);
 					}
+					customer->state = CUSTOMER_STATE_GETTING_OFF_SEAT;
+					customer->stateStartTime = time;
+					customer->stateEndTime = time + CustomerGetTimeForState(customer->state);
 				}
 			} break;
 		}
@@ -398,13 +427,51 @@ void GameUpdate(void) {
 	// update summons
 	for (u32 summonIdx = 0; summonIdx < arrlen(game.summons); summonIdx++) {
 		Summon* summon = &game.summons[summonIdx];
+		const Texture2D summonTexture = AssetsGetTexture(summon->textures[0]);
 		
-		if (!summon->cooking) {
-			summon->position.x -= summon->speed * dt;
-		}
+		const f32 summonStartX = summon->position.x - ((f32)summonTexture.width/2.0f);
+		const f32 summonEndX = summon->position.x + ((f32)summonTexture.width/2.0f);
+		
+		bool wasCooking = summon->cooking;
+		summon->cooking = (game.shootingFire && RangeIntersects(game.shootingFireStartX, game.shootingFireEndX, summonStartX, summonEndX) && (summon->cookAmount < summon->cookBurntDuration + 1.0f));
+		
+		summon->position.x -= summon->speed * dt;
 		
 		if (summon->cooking) {
-			
+			summon->cookAmount += dt;
+		} else {
+			summon->cookAmount -= dt;
+		}
+		summon->cookAmount = ld_max(0.0f, summon->cookAmount);
+		
+		if ((wasCooking && !summon->cooking) && (summon->cookAmount >= summon->cookDoneDuration)) {
+			if (summon->cookAmount >= summon->cookBurntDuration) {
+				// produce burnt item
+				const Food food = { .position = (Vector2) { summon->position.x, summon->position.y + 1 }, .entryID = summon->onCookBurntProducesFoodID };
+				arrpush(game.foods, food);
+			} else {
+				// produce food item
+				const Food food = { .position = (Vector2) { summon->position.x, summon->position.y + 1 }, .entryID = summon->onCookDoneProducesFoodID };
+				arrpush(game.foods, food);
+			}
+			summon->dead = true;
+			PlaySound(AssetsGetSound(ASSET_SOUND_CHICKEN_DEAD));
+		}
+	}
+	
+	// remove summons
+	{
+		bool removed = true;
+		while (removed) {
+			removed = false;
+			for (u32 summonIdx = 0; summonIdx < arrlen(game.summons); summonIdx++) {
+				Summon* summon = &game.summons[summonIdx];
+				if (summon->dead) {
+					arrdel(game.summons, summonIdx);
+					removed = true;
+					break;
+				}
+			}
 		}
 	}
 	
@@ -500,6 +567,28 @@ void GameRender(void) {
 			DrawRectangle((i32)(game.synthesizedHandPosition.x - 2.0f), (i32)floorf(game.synthesizedHandPosition.y), 4, (i32)floorf(TABLETOP_Y - game.synthesizedHandPosition.y), (Color) { 255, 238, 131, 255 });
 		}
 		
+		// draw summon cook bars
+		for (u32 summonIdx = 0; summonIdx < arrlen(game.summons); summonIdx++) {
+			Summon* summon = &game.summons[summonIdx];
+			if (summon->cookAmount > 0.0f) {
+				const Vector2 meterOffset = (Vector2) { 0.0f, 10.0f };
+				const f32 meterWidth = 27.0f;
+				const Color cookedColor = { 128, 156, 97, 255 };
+				const Color burntColor = { 170, 108, 108, 255 };
+				const f32 totalRange = summon->cookBurntDuration + 1.0f;
+				
+				i32 amountLineX = (i32)roundf(meterOffset.x + ((summon->cookAmount / totalRange) * meterWidth));
+				i32 cookedX = (i32)roundf(meterOffset.x + ((summon->cookDoneDuration / totalRange) * meterWidth));
+				i32 burntX = (i32)roundf(meterOffset.x + ((summon->cookBurntDuration / totalRange) * meterWidth));
+				
+				DrawTextureCenteredV(AssetsGetTexture(ASSET_TEXTURE_METER_BOTTOM), Vector2Add(summon->position, meterOffset), WHITE);
+				DrawRectangle(summon->position.x + cookedX - (meterWidth / 2.0f), meterOffset.y + summon->position.y - 2, meterWidth - cookedX + 1, 5, cookedColor);
+				DrawRectangle(summon->position.x + burntX - (meterWidth / 2.0f), meterOffset.y + summon->position.y - 2, meterWidth - burntX + 1, 5, burntColor);
+				DrawLine(summon->position.x + amountLineX - (meterWidth / 2.0f), summon->position.y + meterOffset.y - 2, summon->position.x + amountLineX - (meterWidth / 2.0f), summon->position.y + meterOffset.y + 3, RED);
+				DrawTextureCenteredV(AssetsGetTexture(ASSET_TEXTURE_METER_TOP), Vector2Add(summon->position, meterOffset), WHITE);
+			}
+		}
+		
 		// draw summon book
 		if (game.summonBookAmount > 0.0f) {
 			f32 startOpacity = 0.0f;
@@ -515,6 +604,14 @@ void GameRender(void) {
 			
 			DrawTextDefault("leave", (Vector2) { 200, 128 }, actionsTint);
 			DrawTextureCenteredV(AssetsGetTexture(ASSET_TEXTURE_BUTTON_CIRCLE), (Vector2) { 184, 132 }, actionsTint);
+		}
+		
+		// draw gold amount
+		if (!game.summonBookToggle) {
+			DrawTexture(AssetsGetTexture(ASSET_TEXTURE_GOLD_ICON), 8, 128, WHITE);
+			char goldText[32];
+			sprintf(goldText, "%u", game.gold);
+			DrawTextDefault(goldText, (Vector2) { 19, 128 }, (Color) { 241, 233, 230, 255 });
 		}
 		
 		// draw hand (always on top)
@@ -569,14 +666,15 @@ void GameSummonChicken(void) {
 		.textureCount = 11,
 		.animationStartTime = GetTime(),
 		.animationSpeed = 6.0f,
-		.speed = 8.0f,
+		.speed = 16.0f,
 		.position = (Vector2) { 208, 69 },
 		.cookAmount = 0.0f,
-		.cookDoneDuration = 2.0f,
-		.cookBurntDuration = 3.0f,
+		.cookDoneDuration = 1.5f,
+		.cookBurntDuration = 2.25f,
 		.onCookDoneProducesFoodID = FOOD_ENTRY_ID_ROAST_CHICKEN,
 		.onCookBurntProducesFoodID = FOOD_ENTRY_ID_BURNT_ROAST_CHICKEN,
 	};
 	arrpush(game.summons, summon);
+	PlaySound(AssetsGetSound(ASSET_SOUND_CHICKEN_SUMMON));
 	game.summonBookToggle = false;
 }

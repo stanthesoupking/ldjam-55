@@ -5,6 +5,7 @@
 i32 main(i32 argc, const char *argv[]) {
 	SetConfigFlags(FLAG_WINDOW_RESIZABLE);
 	InitWindow(240 * 4, 144 * 4, "ldjam55");
+	InitAudioDevice();
 	SetTargetFPS(60);
 	
 	AssetsInit();
