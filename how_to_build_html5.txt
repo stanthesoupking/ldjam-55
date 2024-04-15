@@ -1,0 +1,1 @@
+emcc -o game.html unity.c -Os -Wall ../vendor/raylib/lib/html5/libraylib.a -I../vendor/raylib/include -I../vendor/stb -s USE_GLFW=3 --shell-file ./minshell.html -DPLATFORM_WEB --preload-file ../assets

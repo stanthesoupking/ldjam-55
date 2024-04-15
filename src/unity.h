@@ -6,6 +6,10 @@
 #include "raylib.h"
 #include "raymath.h"
 
+#if defined(PLATFORM_WEB)
+    #include <emscripten/emscripten.h>
+#endif
+
 #define STB_DS_IMPLEMENTATION
 #include "stb_ds.h"
 

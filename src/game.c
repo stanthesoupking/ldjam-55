@@ -360,8 +360,13 @@ void GameGoToIntro(void) {
 }
 
 void GameInit(void) {
-	game = (Game) { .day = -1 };
+	game = (Game){ .day = -1, .handPosition = { SCREEN_WIDTH/2, SCREEN_HEIGHT/2 } };
 	game.targetTex = LoadRenderTexture(SCREEN_WIDTH, SCREEN_HEIGHT);
+
+	for (u32 i = 0; i < HAND_TRAIL_LENGTH; i++) {
+		game.handPositionHistory[i] = game.handPosition;
+	}
+
 	SummonBookInit(&game.summonBook);
 	
 	GameGoToIntro();
@@ -474,14 +479,14 @@ void GameUpdatePlaying(void) {
 		Vector2 handAcceleration = Vector2Scale(handVector, dt * 1500.0f);
 		game.handVelocity = Vector2Add(game.handVelocity, handAcceleration);
 	}
-	game.handPosition = Vector2Add(Vector2Add(game.handPosition, Vector2Scale(game.handVelocity, dt)), (Vector2) { 0, (f32)sin(GetTime() * 4.0) * 0.25f });
-	game.synthesizedHandPosition = Vector2Add(game.handPosition, game.handShakeVector);
+	game.handPosition = Vector2Add(game.handPosition, Vector2Scale(game.handVelocity, dt));
+	game.synthesizedHandPosition = Vector2Add(Vector2Add(game.handPosition, game.handShakeVector), (Vector2) { 0, (f32)sin(GetTime() * 2.0) * 3.0f });
 	game.handVelocity = Vector2Scale(game.handVelocity, powf(0.001f, dt));
 	game.handPositionHistoryHead = (game.handPositionHistoryHead + 1) % HAND_TRAIL_LENGTH;
 	game.handPositionHistory[game.handPositionHistoryHead] = game.synthesizedHandPosition;
 	
-	// spawn a customer every ~200 frames
-	if (GetRandomValue(0, 200) == 0) {
+	// spawn a customer every ~100 frames
+	if (GetRandomValue(0, 100) == 0) {
 		GameTrySpawnCustomer();
 	}
 	

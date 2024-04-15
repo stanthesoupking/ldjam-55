@@ -11,7 +11,12 @@ static Assets assets;
 void AssetsInit(void) {
 	assets = (Assets) { 0 };
 	
+#if defined(PLATFORM_WEB)
+	const char* appPath = "../";//GetApplicationDirectory();
+#else
 	const char* appPath = GetApplicationDirectory();
+#endif
+
 	char* bufPath = malloc(2048);
 	
 	sprintf(bufPath, "%sassets/wall.png", appPath);
@@ -122,48 +127,48 @@ void AssetsInit(void) {
 	sprintf(bufPath, "%sassets/creepIntro.png", appPath);
 	assets.textures[ASSET_TEXTURE_CREEP_INTRO] = LoadTexture(bufPath);
 	
-	sprintf(bufPath, "%sassets/chickenSummon.mp3", appPath);
+	sprintf(bufPath, "%sassets/chickenSummon.ogg", appPath);
 	assets.sounds[ASSET_SOUND_CHICKEN_SUMMON] = LoadSound(bufPath);
 	
-	sprintf(bufPath, "%sassets/chickenDead.mp3", appPath);
+	sprintf(bufPath, "%sassets/chickenDead.ogg", appPath);
 	assets.sounds[ASSET_SOUND_CHICKEN_DEAD] = LoadSound(bufPath);
 	
-	sprintf(bufPath, "%sassets/burning.mp3", appPath);
+	sprintf(bufPath, "%sassets/burning.ogg", appPath);
 	assets.sounds[ASSET_SOUND_BURNING] = LoadSound(bufPath);
 	SetSoundVolume(assets.sounds[ASSET_SOUND_BURNING], 0.25f);
 	
-	sprintf(bufPath, "%sassets/woosh.mp3", appPath);
+	sprintf(bufPath, "%sassets/woosh.ogg", appPath);
 	assets.sounds[ASSET_SOUND_WOOSH] = LoadSound(bufPath);
 	SetSoundVolume(assets.sounds[ASSET_SOUND_WOOSH], 0.25f);
 	
-	sprintf(bufPath, "%sassets/crunch.mp3", appPath);
+	sprintf(bufPath, "%sassets/crunch.ogg", appPath);
 	assets.sounds[ASSET_SOUND_CRUNCH] = LoadSound(bufPath);
 	
-	sprintf(bufPath, "%sassets/coin0.mp3", appPath);
+	sprintf(bufPath, "%sassets/coin0.ogg", appPath);
 	assets.sounds[ASSET_SOUND_COIN0] = LoadSound(bufPath);
 	
-	sprintf(bufPath, "%sassets/coin1.mp3", appPath);
+	sprintf(bufPath, "%sassets/coin1.ogg", appPath);
 	assets.sounds[ASSET_SOUND_COIN1] = LoadSound(bufPath);
 	
-	sprintf(bufPath, "%sassets/coin2.mp3", appPath);
+	sprintf(bufPath, "%sassets/coin2.ogg", appPath);
 	assets.sounds[ASSET_SOUND_COIN2] = LoadSound(bufPath);
 	
-	sprintf(bufPath, "%sassets/sheepSummon.mp3", appPath);
+	sprintf(bufPath, "%sassets/sheepSummon.ogg", appPath);
 	assets.sounds[ASSET_SOUND_SHEEP_SUMMON] = LoadSound(bufPath);
 	SetSoundVolume(assets.sounds[ASSET_SOUND_SHEEP_SUMMON], 0.21f);
 	
-	sprintf(bufPath, "%sassets/sheepDead.mp3", appPath);
+	sprintf(bufPath, "%sassets/sheepDead.ogg", appPath);
 	assets.sounds[ASSET_SOUND_SHEEP_DEAD] = LoadSound(bufPath);
 	SetSoundVolume(assets.sounds[ASSET_SOUND_SHEEP_DEAD], 0.21f);
 	
 	sprintf(bufPath, "%sassets/creep.bdf", appPath);
 	assets.font = LoadFont(bufPath);
 	
-	sprintf(bufPath, "%sassets/music.mp3", appPath);
+	sprintf(bufPath, "%sassets/music.ogg", appPath);
 	assets.musics[ASSET_MUSIC_PLAYING] = LoadMusicStream(bufPath);
 	SetMusicVolume(assets.musics[ASSET_MUSIC_PLAYING], 0.45f);
 	
-	sprintf(bufPath, "%sassets/creepyMusic.mp3", appPath);
+	sprintf(bufPath, "%sassets/creepyMusic.ogg", appPath);
 	assets.musics[ASSET_MUSIC_CREEPY_INTRO] = LoadMusicStream(bufPath);
 	SetMusicVolume(assets.musics[ASSET_MUSIC_CREEPY_INTRO], 0.45f);
 	
