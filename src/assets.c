@@ -37,6 +37,9 @@ void AssetsInit(void) {
 	sprintf(bufPath, "%sassets/ogre1.png", appPath);
 	assets.textures[ASSET_TEXTURE_OGRE1] = LoadTexture(bufPath);
 	
+	sprintf(bufPath, "%sassets/olady.png", appPath);
+	assets.textures[ASSET_TEXTURE_OLADY] = LoadTexture(bufPath);
+	
 	sprintf(bufPath, "%sassets/lady0.png", appPath);
 	assets.textures[ASSET_TEXTURE_LADY0] = LoadTexture(bufPath);
 	
